@@ -14,6 +14,8 @@
         <select id="dish_name" name="dish_name">
             {% for dish in dish_options %}
             <option value="{{ dish.value }}" {% if dish.value == selected_dish_name %}selected{% endif %}>{{ dish.label }}</option>
+            {% else %}
+            <option value="">No dishes found / کوئی ڈش نہیں ملی</option>
             {% endfor %}
         </select>
 

@@ -233,11 +233,14 @@ def _get_dishes_with_nutrition(file_paths: list[str] | None = None) -> list[dict
     seen_keys = set()
 
     for file_path in (file_paths or DEFAULT_DISH_FILES):
-        if not Path(file_path).exists():
+        raw_path = Path(file_path)
+        resolved_path = raw_path if raw_path.is_absolute() else (Path(app.root_path) / raw_path)
+
+        if not resolved_path.exists():
             continue
 
         try:
-            for dish in fitness_analysis.parse_dish(file_path):
+            for dish in fitness_analysis.parse_dish(str(resolved_path)):
                 try:
                     dish_copy = {
                         "dish_name": dish["dish_name"],
@@ -259,7 +262,7 @@ def _get_dishes_with_nutrition(file_paths: list[str] | None = None) -> list[dict
                     traceback.print_exc()
                     continue
         except Exception as e:
-            print(f"Error parsing file {file_path}: {e}")
+            print(f"Error parsing file {resolved_path}: {e}")
             import traceback
             traceback.print_exc()
             continue
