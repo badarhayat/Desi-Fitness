@@ -16,12 +16,10 @@ from parse_dish import (
 )
 
 
-user_data = {
-    "weight_log": [],
-    "steps_log": [],
-    "calories_log": [],
-}
+# Multi-user data storage: keyed by username
+all_user_data = {}
 
+# Global fasting data - kept as-is for now, can be made per-user later
 fasting_data = {
     "current_fast": {
         "start_time": None,
@@ -31,6 +29,31 @@ fasting_data = {
     },
     "history": [],
 }
+
+
+def _get_or_create_user_data(username: str) -> dict:
+    """Get or create user data dictionary for a given username."""
+    if username not in all_user_data:
+        all_user_data[username] = {
+            "weight_log": [],
+            "steps_log": [],
+            "calories_log": [],
+            "meal_log": [],
+            "nutrition_log": [],
+            "custom_dishes": [],
+            "profile": {
+                "name": "",
+                "height_cm": None,
+                "height_feet": None,
+                "height_inches": None,
+                "is_registered": False,
+            },
+        }
+    return all_user_data[username]
+
+
+# Backward compatibility: provide default user_data
+user_data = _get_or_create_user_data("default")
 
 
 def parse_dish(file_path: str) -> list[dict[str, Any]]:

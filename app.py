@@ -84,21 +84,24 @@ DISH_WORD_URDU_MAP = {
 }
 
 
-for key in ("meal_log", "nutrition_log"):
-    if key not in fitness_analysis.user_data:
-        fitness_analysis.user_data[key] = []
+def _get_current_username() -> str | None:
+    """Get username from session, or None if not logged in."""
+    return session.get("username")
 
-if "custom_dishes" not in fitness_analysis.user_data:
-    fitness_analysis.user_data["custom_dishes"] = []
 
-if "profile" not in fitness_analysis.user_data:
-    fitness_analysis.user_data["profile"] = {
-        "name": "",
-        "height_cm": None,
-        "height_feet": None,
-        "height_inches": None,
-        "is_registered": False,
-    }
+def _get_current_user_data() -> dict | None:
+    """Get current user's data dictionary, or None if not logged in."""
+    username = _get_current_username()
+    if username:
+        return fitness_analysis._get_or_create_user_data(username)
+    return None
+
+
+def _require_login():
+    """Redirect to login if not authenticated."""
+    if not _get_current_username():
+        return redirect(url_for("login"))
+    return None
 
 
 def _today() -> str:
@@ -181,9 +184,9 @@ def _delete_entry(log: list[dict], entry_id: int) -> None:
     log[:] = [item for item in log if item.get("id") != entry_id]
 
 
-def _rebuild_daily_nutrition() -> None:
+def _rebuild_daily_nutrition(user_data: dict) -> None:
     grouped: dict[str, dict] = {}
-    for meal in fitness_analysis.user_data["meal_log"]:
+    for meal in user_data["meal_log"]:
         date = meal["date"]
         if date not in grouped:
             grouped[date] = {
@@ -224,11 +227,11 @@ def _rebuild_daily_nutrition() -> None:
         )
         calories_log.append({"date": date, "calories": round(summary["calories"], 2)})
 
-    fitness_analysis.user_data["nutrition_log"] = nutrition_log
-    fitness_analysis.user_data["calories_log"] = calories_log
+    user_data["nutrition_log"] = nutrition_log
+    user_data["calories_log"] = calories_log
 
 
-def _get_dishes_with_nutrition(file_paths: list[str] | None = None) -> list[dict]:
+def _get_dishes_with_nutrition(user_data: dict, file_paths: list[str] | None = None) -> list[dict]:
     dishes = []
     seen_keys = set()
 
@@ -267,7 +270,7 @@ def _get_dishes_with_nutrition(file_paths: list[str] | None = None) -> list[dict
             traceback.print_exc()
             continue
 
-    for custom_dish in fitness_analysis.user_data.get("custom_dishes", []):
+    for custom_dish in user_data.get("custom_dishes", []):
         try:
             dish_copy = {
                 "dish_name": custom_dish["dish_name"],
@@ -331,60 +334,60 @@ def _meal_payload(
     return payload
 
 
-def _upsert_weight(date: str, weight: float, entry_id: int | None = None) -> dict:
+def _upsert_weight(user_data: dict, date: str, weight: float, entry_id: int | None = None) -> dict:
     if entry_id is None:
-        entry = {"id": _next_id(fitness_analysis.user_data["weight_log"]), "date": date, "weight": weight}
-        fitness_analysis.user_data["weight_log"].append(entry)
+        entry = {"id": _next_id(user_data["weight_log"]), "date": date, "weight": weight}
+        user_data["weight_log"].append(entry)
         return entry
 
-    entry = _find_entry(fitness_analysis.user_data["weight_log"], entry_id)
+    entry = _find_entry(user_data["weight_log"], entry_id)
     if entry is None:
         entry = {"id": entry_id}
-        fitness_analysis.user_data["weight_log"].append(entry)
+        user_data["weight_log"].append(entry)
     entry.update({"date": date, "weight": weight})
     return entry
 
 
-def _upsert_steps(date: str, steps: int, entry_id: int | None = None) -> dict:
+def _upsert_steps(user_data: dict, date: str, steps: int, entry_id: int | None = None) -> dict:
     calories_lost = fitness_analysis.calculate_calories_burned(steps)
     if entry_id is None:
         entry = {
-            "id": _next_id(fitness_analysis.user_data["steps_log"]),
+            "id": _next_id(user_data["steps_log"]),
             "date": date,
             "steps": steps,
             "calories_lost": calories_lost,
         }
-        fitness_analysis.user_data["steps_log"].append(entry)
+        user_data["steps_log"].append(entry)
         return entry
 
-    entry = _find_entry(fitness_analysis.user_data["steps_log"], entry_id)
+    entry = _find_entry(user_data["steps_log"], entry_id)
     if entry is None:
         entry = {"id": entry_id}
-        fitness_analysis.user_data["steps_log"].append(entry)
+        user_data["steps_log"].append(entry)
     entry.update({"date": date, "steps": steps, "calories_lost": calories_lost})
     return entry
 
 
-def _build_graph_rows() -> list[dict]:
+def _build_graph_rows(user_data: dict) -> list[dict]:
     dates = set()
     for key in ("weight_log", "steps_log", "calories_log"):
-        for entry in fitness_analysis.user_data[key]:
+        for entry in user_data[key]:
             dates.add(entry["date"])
 
     rows = []
     for date in sorted(dates):
         weight = next(
-            (entry["weight"] for entry in fitness_analysis.user_data["weight_log"] if entry["date"] == date),
+            (entry["weight"] for entry in user_data["weight_log"] if entry["date"] == date),
             None,
         )
         steps = next(
-            (entry["steps"] for entry in fitness_analysis.user_data["steps_log"] if entry["date"] == date),
+            (entry["steps"] for entry in user_data["steps_log"] if entry["date"] == date),
             None,
         )
         burned = next(
             (
                 entry["calories_lost"]
-                for entry in fitness_analysis.user_data["steps_log"]
+                for entry in user_data["steps_log"]
                 if entry["date"] == date
             ),
             None,
@@ -392,7 +395,7 @@ def _build_graph_rows() -> list[dict]:
         consumed = next(
             (
                 entry["calories"]
-                for entry in fitness_analysis.user_data["calories_log"]
+                for entry in user_data["calories_log"]
                 if entry["date"] == date
             ),
             None,
@@ -411,11 +414,41 @@ def _build_graph_rows() -> list[dict]:
     return rows
 
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    """Login page for existing users."""
+    error = None
+    if request.method == "POST":
+        username = request.form.get("username", "").strip().lower()
+        
+        if not username:
+            error = "Username is required."
+        elif username not in fitness_analysis.all_user_data:
+            error = "Username not found. Please register first."
+        else:
+            session["username"] = username
+            return redirect(url_for("home"))
+    
+    return render_template("login.html", error=error)
+
+
+@app.route("/logout", methods=["GET", "POST"])
+def logout():
+    """Logout the current user."""
+    session.pop("username", None)
+    return redirect(url_for("login"))
+
+
 @app.route("/")
 def home():
+    login_check = _require_login()
+    if login_check:
+        return login_check
+    
+    user_data = _get_current_user_data()
     today = _today()
     today_nutrition = next(
-        (entry for entry in fitness_analysis.user_data["nutrition_log"] if entry["date"] == today),
+        (entry for entry in user_data["nutrition_log"] if entry["date"] == today),
         None,
     )
     calories_eaten = round(today_nutrition["calories"], 2) if today_nutrition else 0.0
@@ -423,14 +456,14 @@ def home():
     calories_percent = round(min(100.0, (calories_eaten / calories_target) * 100), 2) if calories_target else 0.0
 
     latest_weight = None
-    if fitness_analysis.user_data["weight_log"]:
+    if user_data["weight_log"]:
         latest_weight_entry = max(
-            fitness_analysis.user_data["weight_log"],
+            user_data["weight_log"],
             key=lambda item: (item.get("date", ""), item.get("id", 0)),
         )
         latest_weight = latest_weight_entry.get("weight")
 
-    profile = fitness_analysis.user_data.get("profile", {})
+    profile = user_data.get("profile", {})
 
     bmi = None
     bmi_category = None
@@ -479,38 +512,30 @@ def home():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    profile = fitness_analysis.user_data.setdefault(
-        "profile",
-        {
-            "name": "",
-            "height_cm": None,
-            "height_feet": None,
-            "height_inches": None,
-            "is_registered": False,
-        },
-    )
     error = None
-
-    form_name = profile.get("name", "")
-    form_height_feet = profile.get("height_feet")
-    form_height_inches = profile.get("height_inches")
-
-    if (form_height_feet is None or form_height_inches is None) and profile.get("height_cm"):
-        total_inches = round(float(profile["height_cm"]) / 2.54)
-        form_height_feet = total_inches // 12
-        form_height_inches = total_inches % 12
+    form_name = ""
+    form_username = ""
+    form_height_feet = None
+    form_height_inches = None
 
     if request.method == "POST":
         name = request.form.get("name", "").strip()
+        username = request.form.get("username", "").strip().lower()
         height_feet_raw = request.form.get("height_feet", "").strip()
         height_inches_raw = request.form.get("height_inches", "").strip()
 
         form_name = name
+        form_username = username
         form_height_feet = height_feet_raw
         form_height_inches = height_inches_raw
 
+        # Validation
         if not name:
             error = "Name is required."
+        elif not username:
+            error = "Username is required."
+        elif username in fitness_analysis.all_user_data:
+            error = "Username already taken. Choose another."
         else:
             try:
                 height_feet = int(height_feet_raw)
@@ -522,9 +547,12 @@ def register():
             except ValueError:
                 error = "Enter a valid height in feet and inches (inches 0-11)."
             else:
+                # Create new user account
                 total_inches = (height_feet * 12) + height_inches
                 height_cm = round(total_inches * 2.54, 1)
-                profile.update(
+                
+                user_data = fitness_analysis._get_or_create_user_data(username)
+                user_data["profile"].update(
                     {
                         "name": name,
                         "height_cm": height_cm,
@@ -533,13 +561,16 @@ def register():
                         "is_registered": True,
                     }
                 )
+                
+                # Log them in
+                session["username"] = username
                 return redirect(url_for("home"))
 
     return render_template(
         "register.html",
-        profile=profile,
         error=error,
         form_name=form_name,
+        form_username=form_username,
         form_height_feet=form_height_feet,
         form_height_inches=form_height_inches,
     )
@@ -559,6 +590,11 @@ def set_language():
 
 @app.route("/custom-dish", methods=["GET", "POST"])
 def custom_dish():
+    login_check = _require_login()
+    if login_check:
+        return login_check
+    
+    user_data = _get_current_user_data()
     error = None
 
     if request.method == "POST":
@@ -621,7 +657,7 @@ def custom_dish():
                 error = "Add at least one ingredient."
 
         if error is None:
-            existing = fitness_analysis.user_data.setdefault("custom_dishes", [])
+            existing = user_data.setdefault("custom_dishes", [])
             existing[:] = [dish for dish in existing if dish.get("dish_name", "").lower() != dish_name.lower()]
             existing.append(
                 {
@@ -637,7 +673,7 @@ def custom_dish():
         "custom_dish.html",
         error=error,
         custom_dishes=sorted(
-            fitness_analysis.user_data.get("custom_dishes", []),
+            user_data.get("custom_dishes", []),
             key=lambda item: item.get("dish_name", "").lower(),
         ),
     )
@@ -645,7 +681,12 @@ def custom_dish():
 
 @app.route("/analyze", methods=["GET", "POST"])
 def analyze():
-    dishes = _get_dishes_with_nutrition()
+    login_check = _require_login()
+    if login_check:
+        return login_check
+    
+    user_data = _get_current_user_data()
+    dishes = _get_dishes_with_nutrition(user_data)
     dish_options = [{"value": dish["dish_name"], "label": dish["display_name"]} for dish in dishes]
     form_source = request.form if request.method == "POST" else request.args
     selected_dish_name = form_source.get("dish_name", "")
@@ -661,13 +702,13 @@ def analyze():
         action = request.form.get("action", "preview")
         try:
             if action == "delete":
-                _delete_entry(fitness_analysis.user_data["meal_log"], int(request.form["meal_id"]))
-                _rebuild_daily_nutrition()
+                _delete_entry(user_data["meal_log"], int(request.form["meal_id"]))
+                _rebuild_daily_nutrition(user_data)
                 return redirect(url_for("analyze"))
 
             if action == "edit":
                 editing_meal = _find_entry(
-                    fitness_analysis.user_data["meal_log"], int(request.form["meal_id"])
+                    user_data["meal_log"], int(request.form["meal_id"])
                 )
                 if editing_meal:
                     selected_dish_name = editing_meal["dish_name"]
@@ -696,21 +737,21 @@ def analyze():
                     entry_id=int(meal_id) if meal_id else None,
                 )
                 if meal_id:
-                    entry = _find_entry(fitness_analysis.user_data["meal_log"], int(meal_id))
+                    entry = _find_entry(user_data["meal_log"], int(meal_id))
                     if entry is None:
-                        fitness_analysis.user_data["meal_log"].append(payload)
+                        user_data["meal_log"].append(payload)
                     else:
                         entry.update(payload)
                 else:
-                    payload["id"] = _next_id(fitness_analysis.user_data["meal_log"])
-                    fitness_analysis.user_data["meal_log"].append(payload)
-                _rebuild_daily_nutrition()
+                    payload["id"] = _next_id(user_data["meal_log"])
+                    user_data["meal_log"].append(payload)
+                _rebuild_daily_nutrition(user_data)
                 return redirect(url_for("analyze", meal_date=meal_date))
         except Exception as exc:
             error = str(exc)
 
     logged_for_date = next(
-        (entry for entry in fitness_analysis.user_data["nutrition_log"] if entry["date"] == meal_date),
+        (entry for entry in user_data["nutrition_log"] if entry["date"] == meal_date),
         None,
     )
     logged_dishes_display = []
@@ -732,7 +773,7 @@ def analyze():
         meal_date=meal_date,
         logged_for_date=logged_for_date,
         logged_dishes_display=logged_dishes_display,
-        meal_log=sorted(fitness_analysis.user_data["meal_log"], key=lambda item: (item["date"], item["id"])),
+        meal_log=sorted(user_data["meal_log"], key=lambda item: (item["date"], item["id"])),
         editing_meal=editing_meal,
         error=error,
     )
@@ -740,6 +781,11 @@ def analyze():
 
 @app.route("/track", methods=["GET", "POST"])
 def track():
+    login_check = _require_login()
+    if login_check:
+        return login_check
+    
+    user_data = _get_current_user_data()
     result = None
     editing_weight = None
     editing_steps = None
@@ -748,21 +794,21 @@ def track():
         action = request.form.get("action", "add")
 
         if action == "delete_weight":
-            _delete_entry(fitness_analysis.user_data["weight_log"], int(request.form["weight_id"]))
+            _delete_entry(user_data["weight_log"], int(request.form["weight_id"]))
             return redirect(url_for("track"))
 
         if action == "delete_steps":
-            _delete_entry(fitness_analysis.user_data["steps_log"], int(request.form["steps_id"]))
+            _delete_entry(user_data["steps_log"], int(request.form["steps_id"]))
             return redirect(url_for("track"))
 
         if action == "edit_weight":
             editing_weight = _find_entry(
-                fitness_analysis.user_data["weight_log"], int(request.form["weight_id"])
+                user_data["weight_log"], int(request.form["weight_id"])
             )
 
         if action == "edit_steps":
             editing_steps = _find_entry(
-                fitness_analysis.user_data["steps_log"], int(request.form["steps_id"])
+                user_data["steps_log"], int(request.form["steps_id"])
             )
 
         if action == "save_weight":
@@ -770,7 +816,7 @@ def track():
             weight = request.form.get("weight", "").strip()
             if weight:
                 entry_id = request.form.get("weight_id", "").strip()
-                result = _upsert_weight(date, float(weight), int(entry_id) if entry_id else None)
+                result = _upsert_weight(user_data, date, float(weight), int(entry_id) if entry_id else None)
                 return redirect(url_for("track"))
 
         if action == "save_steps":
@@ -778,15 +824,15 @@ def track():
             steps = request.form.get("steps", "").strip()
             if steps:
                 entry_id = request.form.get("steps_id", "").strip()
-                result = _upsert_steps(date, int(steps), int(entry_id) if entry_id else None)
+                result = _upsert_steps(user_data, date, int(steps), int(entry_id) if entry_id else None)
                 return redirect(url_for("track"))
 
     return render_template(
         "track.html",
         result=result,
         today=_today(),
-        weight_log=sorted(fitness_analysis.user_data["weight_log"], key=lambda item: (item["date"], item["id"])),
-        steps_log=sorted(fitness_analysis.user_data["steps_log"], key=lambda item: (item["date"], item["id"])),
+        weight_log=sorted(user_data["weight_log"], key=lambda item: (item["date"], item["id"])),
+        steps_log=sorted(user_data["steps_log"], key=lambda item: (item["date"], item["id"])),
         editing_weight=editing_weight,
         editing_steps=editing_steps,
     )
@@ -794,6 +840,10 @@ def track():
 
 @app.route("/fasting", methods=["GET", "POST"])
 def fasting():
+    login_check = _require_login()
+    if login_check:
+        return login_check
+    
     duration_options = [16, 18, 20, 48]
 
     if request.method == "POST":
@@ -832,7 +882,12 @@ def fasting():
 
 @app.route("/graph")
 def graph():
-    graph_data = _build_graph_rows()
+    login_check = _require_login()
+    if login_check:
+        return login_check
+    
+    user_data = _get_current_user_data()
+    graph_data = _build_graph_rows(user_data)
     graph_url = None
 
     if graph_data:

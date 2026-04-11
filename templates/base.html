@@ -165,6 +165,29 @@
             color: var(--mehndi);
             font-weight: 700;
         }
+        .user-info {
+            text-align: center;
+            padding: 8px;
+            margin-bottom: 12px;
+            background: rgba(47, 111, 62, 0.08);
+            border: 1px solid rgba(47, 111, 62, 0.2);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: var(--mehndi);
+        }
+        .logout-btn {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #c62828;
+            padding: 8px;
+            border-radius: 10px;
+            font-weight: 600;
+            text-align: center;
+            flexbasis: 100%;
+        }
+        .logout-btn:hover {
+            background: #f8d7da;
+        }
         @media (min-width: 900px) {
             body {
                 display: grid;
@@ -186,12 +209,18 @@
 <body>
     <div class="shell">
         <nav class="nav">
-            <a href="{{ url_for('home') }}">{{ t("Ghar / گھر") }}</a>
-            <a href="{{ url_for('register') }}">{{ t("Register / رجسٹر") }}</a>
-            <a href="{{ url_for('analyze') }}">{{ t("Khana / کھانا") }}</a>
-            <a href="{{ url_for('track') }}">{{ t("Tracking / ٹریکنگ") }}</a>
-            <a href="{{ url_for('fasting') }}">{{ t("Roza / روزہ") }}</a>
-            <a href="{{ url_for('graph') }}">{{ t("Graph / گراف") }}</a>
+            {% if session.get('username') %}
+                <a href="{{ url_for('home') }}">{{ t("Ghar / گھر") }}</a>
+                <a href="{{ url_for('analyze') }}">{{ t("Khana / کھانا") }}</a>
+                <a href="{{ url_for('track') }}">{{ t("Tracking / ٹریکنگ") }}</a>
+                <a href="{{ url_for('fasting') }}">{{ t("Roza / روزہ") }}</a>
+                <a href="{{ url_for('graph') }}">{{ t("Graph / گراف") }}</a>
+                <a href="{{ url_for('custom_dish') }}">{{ t("New Dish / نیا ڈش") }}</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">{{ t("Login / لاگ ان") }}</a>
+                <a href="{{ url_for('register') }}">{{ t("Register / رجسٹر") }}</a>
+            {% endif %}
+            
             <form method="post" action="{{ url_for('set_language') }}" class="lang-form">
                 <input type="hidden" name="next" value="{{ request.path }}{% if request.query_string %}?{{ request.query_string.decode('utf-8') }}{% endif %}">
                 <select name="language" onchange="this.form.submit()" aria-label="Language Toggle">
@@ -200,7 +229,18 @@
                     {% endfor %}
                 </select>
             </form>
+            
+            {% if session.get('username') %}
+                <a href="{{ url_for('logout') }}" class="logout-btn">{{ t("Logout / لاگ آؤٹ") }}</a>
+            {% endif %}
         </nav>
+        
+        {% if session.get('username') %}
+        <div class="user-info">
+            {{ t("Logged in as / صارف:") }} <strong>{{ session.get('username') }}</strong>
+        </div>
+        {% endif %}
+        
         {% block content %}{% endblock %}
     </div>
     <script>
