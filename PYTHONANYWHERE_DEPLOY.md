@@ -1,4 +1,4 @@
-PythonAnywhere Deployment (badarhayat)
+PythonAnywhere Deployment (badarniazi)
 
 1) Open a Bash console on PythonAnywhere.
 
@@ -18,13 +18,13 @@ PythonAnywhere Deployment (badarhayat)
 5) In PythonAnywhere dashboard:
    - Go to Web tab
    - Add a new web app (Manual configuration, Python 3.10)
-   - Set virtualenv path to: /home/badarhayat/.virtualenvs/desifitness-env
-   - Set source code path to: /home/badarhayat/Desi-Fitness
+   - Set virtualenv path to: /home/badarniazi/.virtualenvs/desifitness-env
+   - Set source code path to: /home/badarniazi/Desi-Fitness
 
 6) Edit WSGI file in Web tab and replace contents with:
 
    import sys
-   path = '/home/badarhayat/Desi-Fitness'
+      path = '/home/badarniazi/Desi-Fitness'
    if path not in sys.path:
        sys.path.insert(0, path)
 
@@ -32,12 +32,12 @@ PythonAnywhere Deployment (badarhayat)
 
 7) Static files mapping (Web tab):
    URL: /static/
-   Directory: /home/badarhayat/Desi-Fitness/static/
+   Directory: /home/badarniazi/Desi-Fitness/static/
 
 8) Click Reload on Web tab.
 
 9) Visit your app URL:
-   https://badarhayat.pythonanywhere.com
+   https://badarniazi.pythonanywhere.com
 
 Troubleshooting:
 - If app fails, check error log in Web tab.
