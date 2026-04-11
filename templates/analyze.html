@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel">
+    <h1>Food / کھانا</h1>
+    <p><a href="{{ url_for('custom_dish') }}">Apni Dish Banayein / اپنی ڈش بنائیں</a></p>
+    <form method="post">
+        <input id="current_preview_dish_name" type="hidden" name="current_preview_dish_name" value="{{ current_preview_dish_name }}">
+
+        <label for="meal_date">Date / تاریخ</label>
+        <input id="meal_date" type="date" name="meal_date" value="{{ meal_date }}">
+
+        <label for="dish_name">Dish Select Karein / ڈش منتخب کریں</label>
+        <select id="dish_name" name="dish_name">
+            {% for dish in dish_options %}
+            <option value="{{ dish.value }}" {% if dish.value == selected_dish_name %}selected{% endif %}>{{ dish.label }}</option>
+            {% endfor %}
+        </select>
+
+        {% if selected_dish and selected_dish.supports_rotis %}
+        <label for="rotis">Khayi hui rotian (1 roti = 110g atta) / کھائی ہوئی روٹیاں</label>
+        <input id="rotis" type="number" min="0" step="1" name="rotis" value="{{ selected_rotis }}">
+        <p class="muted">
+            Har roti mein izafa: {{ roti_nutrition_per_piece.calories }} kcal,
+            Protein {{ roti_nutrition_per_piece.protein }},
+            Carbs {{ roti_nutrition_per_piece.carbs }},
+            Fat {{ roti_nutrition_per_piece.fat }}
+        </p>
+        {% endif %}
+
+        {% if editing_meal %}
+        <input type="hidden" name="meal_id" value="{{ editing_meal.id }}">
+        <button type="submit" name="action" value="save">Meal Save Karein / میل محفوظ کریں</button>
+        {% else %}
+        <button type="submit" name="action" value="add">Dish Log Karein / ڈش لاگ کریں</button>
+        {% endif %}
+        <button type="submit" name="action" value="preview">Preview Dish / ڈش دیکھیں</button>
+    </form>
+</section>
+
+{% if error %}
+<section class="panel">
+    <p class="danger">{{ error }}</p>
+</section>
+{% endif %}
+
+{% if preview_dish %}
+<section class="panel" id="preview-panel">
+    <h2>{{ dish_label(preview_dish.dish_name) }}</h2>
+    <p class="muted">{{ preview_dish.persons }} afrad ke liye / {{ preview_dish.persons }} افراد کے لیے</p>
+    {% if preview_dish.supports_rotis %}
+    <p class="muted">Atta is excluded from dish ingredients; add consumed atta using rotis above.</p>
+    {% endif %}
+    {% if preview_dish.nutrition_per_person %}
+    <p>
+        Calories/person: {{ preview_dish.nutrition_per_person.calories }},
+        Protein/person: {{ preview_dish.nutrition_per_person.protein }},
+        Carbs/person: {{ preview_dish.nutrition_per_person.carbs }},
+        Fat/person: {{ preview_dish.nutrition_per_person.fat }}
+    </p>
+    {% endif %}
+
+    <h3>Calories by Item / اجزاء کے حساب سے کیلوریز</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Item / جز</th>
+                <th>Quantity / مقدار</th>
+                <th>Calories</th>
+                <th>Protein</th>
+                <th>Carbs</th>
+                <th>Fat</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ingredient in preview_dish.ingredients %}
+            <tr>
+                <td>{{ ingredient.name }}</td>
+                <td>{{ "%.3f"|format(ingredient.quantity) }} {{ ingredient.unit }}</td>
+                <td>{{ "%.2f"|format(ingredient.nutrition.calories if ingredient.nutrition else 0) }}</td>
+                <td>{{ "%.2f"|format(ingredient.nutrition.protein if ingredient.nutrition else 0) }}</td>
+                <td>{{ "%.2f"|format(ingredient.nutrition.carbs if ingredient.nutrition else 0) }}</td>
+                <td>{{ "%.2f"|format(ingredient.nutrition.fat if ingredient.nutrition else 0) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="muted">Is dish ke ingredients nahin mile / اس ڈش کے اجزاء نہیں ملے</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if preview_dish.missing_nutrition_items %}
+    <p class="muted">Items with missing nutrition reference: {{ preview_dish.missing_nutrition_items | join(", ") }}</p>
+    {% endif %}
+</section>
+{% endif %}
+
+<script>
+    (function () {
+        const dishSelect = document.getElementById("dish_name");
+        const currentPreviewInput = document.getElementById("current_preview_dish_name");
+        const previewPanel = document.getElementById("preview-panel");
+
+        if (!dishSelect || !currentPreviewInput) {
+            return;
+        }
+
+        dishSelect.addEventListener("change", function () {
+            currentPreviewInput.value = "";
+            if (previewPanel) {
+                previewPanel.hidden = true;
+            }
+        });
+    })();
+</script>
+
+{% if logged_for_date %}
+<section class="panel">
+    <h2>{{ meal_date }} Ki Nutrition / غذائیت</h2>
+    <p class="muted">Logged dishes / لاگ ڈشز: {{ logged_dishes_display | join(", ") }}</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Nutrient</th>
+                <th>Intake</th>
+                <th>Target</th>
+                <th>Deficit/Surplus</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Calories</td>
+                <td>{{ logged_for_date.calories }}</td>
+                <td>{{ logged_for_date.targets.calories }}</td>
+                <td>
+                    {% if logged_for_date.deficit.calories > 0 %}
+                    <span class="muted">{{ logged_for_date.deficit.calories }} remaining</span>
+                    {% elif logged_for_date.deficit.calories < 0 %}
+                    <span>{{ "%.2f"|format(logged_for_date.deficit.calories * -1) }} surplus</span>
+                    {% else %}
+                    <span class="muted">On target</span>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td>Protein (g)</td>
+                <td>{{ logged_for_date.protein }}</td>
+                <td>{{ logged_for_date.targets.protein }}</td>
+                <td>
+                    {% if logged_for_date.deficit.protein > 0 %}
+                    <span class="muted">{{ logged_for_date.deficit.protein }}g remaining</span>
+                    {% elif logged_for_date.deficit.protein < 0 %}
+                    <span>{{ "%.2f"|format(logged_for_date.deficit.protein * -1) }}g surplus</span>
+                    {% else %}
+                    <span class="muted">On target</span>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td>Carbs (g)</td>
+                <td>{{ logged_for_date.carbs }}</td>
+                <td>{{ logged_for_date.targets.carbs }}</td>
+                <td>
+                    {% if logged_for_date.deficit.carbs > 0 %}
+                    <span class="muted">{{ logged_for_date.deficit.carbs }}g remaining</span>
+                    {% elif logged_for_date.deficit.carbs < 0 %}
+                    <span>{{ "%.2f"|format(logged_for_date.deficit.carbs * -1) }}g surplus</span>
+                    {% else %}
+                    <span class="muted">On target</span>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td>Fat (g)</td>
+                <td>{{ logged_for_date.fat }}</td>
+                <td>{{ logged_for_date.targets.fat }}</td>
+                <td>
+                    {% if logged_for_date.deficit.fat > 0 %}
+                    <span class="muted">{{ logged_for_date.deficit.fat }}g remaining</span>
+                    {% elif logged_for_date.deficit.fat < 0 %}
+                    <span>{{ "%.2f"|format(logged_for_date.deficit.fat * -1) }}g surplus</span>
+                    {% else %}
+                    <span class="muted">On target</span>
+                    {% endif %}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+{% endif %}
+
+<section class="panel">
+    <h2>Meal Log / میل لاگ</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Dish</th>
+                <th>Rotis</th>
+                <th>Calories</th>
+                <th>Protein</th>
+                <th>Carbs</th>
+                <th>Fat</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for meal in meal_log %}
+            <tr>
+                <td>{{ meal.date }}</td>
+                <td>{{ dish_label(meal.dish_name) }}</td>
+                <td>{{ meal.rotis or 0 }}</td>
+                <td>{{ meal.calories }}</td>
+                <td>{{ meal.protein }}</td>
+                <td>{{ meal.carbs }}</td>
+                <td>{{ meal.fat }}</td>
+                <td>
+                    <form method="post" style="display:inline;">
+                        <input type="hidden" name="meal_id" value="{{ meal.id }}">
+                        <button type="submit" name="action" value="edit">Edit</button>
+                    </form>
+                    <form method="post" style="display:inline;">
+                        <input type="hidden" name="meal_id" value="{{ meal.id }}">
+                        <button type="submit" name="action" value="delete">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" class="muted">No meals logged yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

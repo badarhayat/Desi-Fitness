@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="grid">
+    <div class="panel">
+        <h1>Wazan Track Karein / وزن ٹریک کریں</h1>
+        <form method="post">
+            <label for="weight_date">Date / تاریخ</label>
+            <input id="weight_date" type="date" name="weight_date" value="{{ editing_weight.date if editing_weight else today }}">
+
+            <label for="weight">Weight (kg) / وزن</label>
+            <input id="weight" name="weight" placeholder="77.8" value="{{ editing_weight.weight if editing_weight else '' }}">
+
+            {% if editing_weight %}
+            <input type="hidden" name="weight_id" value="{{ editing_weight.id }}">
+            {% endif %}
+            <button type="submit" name="action" value="save_weight">{% if editing_weight %}Save Weight / وزن محفوظ{% else %}Add Weight / وزن شامل کریں{% endif %}</button>
+        </form>
+    </div>
+
+    <div class="panel">
+        <h1>Qadam Track Karein / قدم ٹریک کریں</h1>
+        <form method="post">
+            <label for="steps_date">Date / تاریخ</label>
+            <input id="steps_date" type="date" name="steps_date" value="{{ editing_steps.date if editing_steps else today }}">
+
+            <label for="steps">Steps / قدم</label>
+            <input id="steps" name="steps" placeholder="8000" value="{{ editing_steps.steps if editing_steps else '' }}">
+
+            {% if editing_steps %}
+            <input type="hidden" name="steps_id" value="{{ editing_steps.id }}">
+            {% endif %}
+            <button type="submit" name="action" value="save_steps">{% if editing_steps %}Save Steps / قدم محفوظ{% else %}Add Steps / قدم شامل کریں{% endif %}</button>
+        </form>
+    </div>
+</section>
+
+<section class="grid">
+    <div class="panel">
+        <h2>Weight Log / وزن لاگ</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date / تاریخ</th>
+                    <th>Weight / وزن</th>
+                    <th>Actions / کارروائی</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in weight_log %}
+                <tr>
+                    <td>{{ item.date }}</td>
+                    <td>{{ item.weight }}</td>
+                    <td>
+                        <form method="post" style="display:inline;">
+                            <input type="hidden" name="weight_id" value="{{ item.id }}">
+                            <button type="submit" name="action" value="edit_weight">Edit / ترمیم</button>
+                        </form>
+                        <form method="post" style="display:inline;">
+                            <input type="hidden" name="weight_id" value="{{ item.id }}">
+                            <button type="submit" name="action" value="delete_weight">Delete / حذف</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" class="muted">Abhi koi wazan entry nahin / ابھی کوئی وزن اندراج نہیں</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="panel">
+        <h2>Steps Log / قدم لاگ</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date / تاریخ</th>
+                    <th>Steps / قدم</th>
+                    <th>Calories Burned / جلائی گئی کیلوریز</th>
+                    <th>Actions / کارروائی</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in steps_log %}
+                <tr>
+                    <td>{{ item.date }}</td>
+                    <td>{{ item.steps }}</td>
+                    <td>{{ item.calories_lost }}</td>
+                    <td>
+                        <form method="post" style="display:inline;">
+                            <input type="hidden" name="steps_id" value="{{ item.id }}">
+                            <button type="submit" name="action" value="edit_steps">Edit / ترمیم</button>
+                        </form>
+                        <form method="post" style="display:inline;">
+                            <input type="hidden" name="steps_id" value="{{ item.id }}">
+                            <button type="submit" name="action" value="delete_steps">Delete / حذف</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="muted">Abhi koi step entry nahin / ابھی کوئی قدم اندراج نہیں</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

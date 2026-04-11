@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel">
+    <h1>Custom Dish Banayein / اپنی ڈش بنائیں</h1>
+    <p class="muted">Apni marzi ki dish banayein aur future food logging ke liye save karein / اپنی مرضی کی ڈش بنائیں اور آئندہ فوڈ لاگنگ کے لیے محفوظ کریں</p>
+
+    {% if error %}
+    <p class="danger">{{ error }}</p>
+    {% endif %}
+
+    <form method="post" id="custom-dish-form">
+        <label for="dish_name">Dish Name / ڈش کا نام</label>
+        <input id="dish_name" name="dish_name" placeholder="Misal: Family Omelette / مثال" required>
+
+        <label for="persons">Serves (persons) / کتنے افراد کے لیے</label>
+        <input id="persons" name="persons" type="number" min="1" step="1" value="1" required>
+
+        <label>
+            <input type="checkbox" name="supports_rotis">
+            Is dish ke sath roti khayi jati hai (atta nutrition mein include nahin) / اس ڈش کے ساتھ روٹی کھائی جاتی ہے (آٹا غذائیت میں شامل نہیں)
+        </label>
+
+        <h2>Ingredients / اجزاء</h2>
+        <div id="ingredient-list" class="ingredient-list"></div>
+
+        <button type="button" id="add-ingredient" class="secondary-btn">Ingredient Add Karein / جز شامل کریں</button>
+        <button type="submit">Dish Save Karein / ڈش محفوظ کریں</button>
+    </form>
+</section>
+
+<section class="panel">
+    <h2>Aap Ki Saved Dishes / آپ کی محفوظ ڈشز</h2>
+    <ul>
+        {% for dish in custom_dishes %}
+        <li>{{ dish.dish_name }} ({{ dish.persons }} افراد)</li>
+        {% else %}
+        <li class="muted">Abhi koi custom dish nahin / ابھی کوئی کسٹم ڈش نہیں</li>
+        {% endfor %}
+    </ul>
+</section>
+
+<style>
+    .ingredient-list {
+        display: grid;
+        gap: 10px;
+    }
+    .ingredient-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr auto;
+        gap: 8px;
+        align-items: center;
+    }
+    .remove-btn,
+    .secondary-btn {
+        background: #efddc5;
+        color: #6f341e;
+        box-shadow: none;
+    }
+    .remove-btn {
+        width: auto;
+        padding: 10px;
+        border: 1px solid rgba(143, 63, 34, 0.2);
+    }
+</style>
+
+<script>
+    (function () {
+        const ingredientList = document.getElementById("ingredient-list");
+        const addButton = document.getElementById("add-ingredient");
+
+        function ingredientRowHtml() {
+            return `
+                <div class="ingredient-row">
+                    <input name="ingredient_name" placeholder="Item name / جز کا نام" required>
+                    <input name="ingredient_quantity" type="number" step="0.001" min="0.001" placeholder="Qty / مقدار" required>
+                    <select name="ingredient_unit">
+                        <option value="kilograms">kg</option>
+                        <option value="litres">litres</option>
+                        <option value="pieces">pieces</option>
+                    </select>
+                    <button type="button" class="remove-btn">X</button>
+                </div>
+            `;
+        }
+
+        function addRow() {
+            ingredientList.insertAdjacentHTML("beforeend", ingredientRowHtml());
+        }
+
+        ingredientList.addEventListener("click", function (event) {
+            if (!event.target.classList.contains("remove-btn")) {
+                return;
+            }
+            const rows = ingredientList.querySelectorAll(".ingredient-row");
+            if (rows.length <= 1) {
+                return;
+            }
+            event.target.closest(".ingredient-row").remove();
+        });
+
+        addButton.addEventListener("click", addRow);
+        addRow();
+    })();
+</script>
+{% endblock %}

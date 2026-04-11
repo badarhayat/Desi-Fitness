@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel hero">
+    <h1>Desi Fitness Dashboard</h1>
+    <p class="muted">Analyze dishes, track progress, and manage fasting from one place.</p>
+</section>
+
+<section class="panel">
+    <h2>Dish File</h2>
+    <form action="{{ url_for('analyze') }}" method="post">
+        <label for="file_path">Enter dish CSV file</label>
+        <input id="file_path" name="file_path" value="dishes.csv">
+        <button type="submit">Analyze Dish File</button>
+    </form>
+</section>
+{% endblock %}

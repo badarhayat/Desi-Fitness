@@ -1,0 +1,704 @@
+[
+  {
+    "dish_name": "Chicken Karhai",
+    "persons": "57",
+    "ingredients": [
+      {
+        "ingredient": "karahi masala",
+        "quantity": "1",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "chicken",
+        "quantity": "5",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Dahi",
+        "quantity": "1",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Garm masala",
+        "quantity": "0.03",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Lemon",
+        "quantity": "0.5",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Oil",
+        "quantity": "1.7",
+        "unit": "litres"
+      },
+      {
+        "ingredient": "pissa dhania",
+        "quantity": "0.02",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Piyaaz",
+        "quantity": "4.63",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "red chilli",
+        "quantity": "0.12",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "sabat dhania",
+        "quantity": "0.13",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Sabz Dhania",
+        "quantity": "1",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "sabz mirch",
+        "quantity": "0.15",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "salt",
+        "quantity": "0.06",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Sirka",
+        "quantity": "0.5",
+        "unit": "litres"
+      },
+      {
+        "ingredient": "Tamatar",
+        "quantity": "1.5",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Thoom Adrak",
+        "quantity": "0.16",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Zeera",
+        "quantity": "0.03",
+        "unit": "kilograms"
+      }
+    ]
+  },
+  {
+    "dish_name": "Chicken Biryani",
+    "persons": "112",
+    "ingredients": [
+      {
+        "ingredient": "Biryani masala",
+        "quantity": "1",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "chicken",
+        "quantity": "11.05",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "kasuri methe",
+        "quantity": "0.04",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Dara chli",
+        "quantity": "0.03",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Dahi",
+        "quantity": "17",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Garm masala",
+        "quantity": "0.07",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Imli",
+        "quantity": "0.5",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "lemon",
+        "quantity": "0.55",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Kheeray",
+        "quantity": "1",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Oil",
+        "quantity": "4.05",
+        "unit": "litres"
+      },
+      {
+        "ingredient": "Pakorian",
+        "quantity": "0.5",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Piyaaz",
+        "quantity": "1.55",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Podina",
+        "quantity": "5",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "red chilli",
+        "quantity": "0.05",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "rice",
+        "quantity": "23",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "sabat dhania",
+        "quantity": "0.07",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Sabz Dhania",
+        "quantity": "1",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "sabz mirch",
+        "quantity": "0.17",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "achar",
+        "quantity": "0.5",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "salt",
+        "quantity": "0.54",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Sirka",
+        "quantity": "0.5",
+        "unit": "litres"
+      },
+      {
+        "ingredient": "Tamatar",
+        "quantity": "1.42",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Thoom Adrak",
+        "quantity": "0.33",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "zarda rang",
+        "quantity": "1",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Zeera",
+        "quantity": "0.08",
+        "unit": "kilograms"
+      }
+    ]
+  },
+  {
+    "dish_name": "Chicken roast with chips",
+    "persons": "68",
+    "ingredients": [
+      {
+        "ingredient": "Aaloo",
+        "quantity": "25",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "chicken",
+        "quantity": "12.5",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "daal",
+        "quantity": "3.5",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Dara chli",
+        "quantity": "0.02",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Dahi",
+        "quantity": "2",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Garm masala",
+        "quantity": "0.03",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "haldi",
+        "quantity": "0.05",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "ketchup",
+        "quantity": "3",
+        "unit": "litres"
+      },
+      {
+        "ingredient": "lemon",
+        "quantity": "0.5",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Oil",
+        "quantity": "3",
+        "unit": "litres"
+      },
+      {
+        "ingredient": "pissa dhania",
+        "quantity": "0.02",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Piyaaz",
+        "quantity": "0.9",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "red chilli",
+        "quantity": "0.06",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "sabat dhania",
+        "quantity": "0.02",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Sabz Dhania",
+        "quantity": "1",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "salt",
+        "quantity": "0.27",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Tamatar",
+        "quantity": "0.46",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Thoom Adrak",
+        "quantity": "0.17",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Zeera",
+        "quantity": "0.04",
+        "unit": "kilograms"
+      }
+    ]
+  },
+  {
+    "dish_name": "Chicken karhai",
+    "persons": "54",
+    "ingredients": [
+      {
+        "ingredient": "chicken",
+        "quantity": "4.784",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Dahi",
+        "quantity": "1",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Garm masala",
+        "quantity": "0.02",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Oil",
+        "quantity": "1.5",
+        "unit": "litres"
+      },
+      {
+        "ingredient": "Piyaaz",
+        "quantity": "6",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "red chilli",
+        "quantity": "0.02",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "lemon",
+        "quantity": "0.2",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "sabat dhania",
+        "quantity": "0.02",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Sabz Dhania",
+        "quantity": "1",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "sabz mirch",
+        "quantity": "0.01",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "salt",
+        "quantity": "0.05",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Tamatar",
+        "quantity": "1.35",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Thoom Adrak",
+        "quantity": "0.12",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Zeera",
+        "quantity": "0.02",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "acher",
+        "quantity": "0.5",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "haldi",
+        "quantity": "0.02",
+        "unit": "kilograms"
+      }
+    ]
+  },
+  {
+    "dish_name": "Chicken jalfarezi",
+    "persons": "60",
+    "ingredients": [
+      {
+        "ingredient": "Aaloo",
+        "quantity": "5",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "chicken",
+        "quantity": "2",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "haldai",
+        "quantity": "0.03",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Dahi",
+        "quantity": "1",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Garm masala",
+        "quantity": "0.03",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "gajar",
+        "quantity": "5",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "shamla",
+        "quantity": "2.5",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "band gobhi",
+        "quantity": "2.5",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Oil",
+        "quantity": "1.5",
+        "unit": "litres"
+      },
+      {
+        "ingredient": "Piyaaz",
+        "quantity": "1.43",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "red chilli",
+        "quantity": "0.03",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "rice",
+        "quantity": "1",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "sabat dhania",
+        "quantity": "0.03",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Sabz Dhania",
+        "quantity": "1",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "sabz mirch",
+        "quantity": "0.4",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "salt",
+        "quantity": "0.06",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Tamatar",
+        "quantity": "0.84",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Thoom Adrak",
+        "quantity": "0.16",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Zeera",
+        "quantity": "0.02",
+        "unit": "kilograms"
+      }
+    ]
+  },
+  {
+    "dish_name": "Chicken Daleem",
+    "persons": "42",
+    "ingredients": [
+      {
+        "ingredient": "chicken",
+        "quantity": "1.5",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Daal",
+        "quantity": "1",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Dahi",
+        "quantity": "0.5",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Garm masala",
+        "quantity": "0.02",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Haleem Masala",
+        "quantity": "1",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "haldi",
+        "quantity": "0.02",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Oil",
+        "quantity": "1.05",
+        "unit": "litres"
+      },
+      {
+        "ingredient": "Piyaaz",
+        "quantity": "2",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "red chilli",
+        "quantity": "0.02",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "rice",
+        "quantity": "0.2",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "sabat dhania",
+        "quantity": "0.04",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "sabz mirch",
+        "quantity": "0.5",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "salt",
+        "quantity": "0.04",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "soya sauce",
+        "quantity": "1",
+        "unit": "litres"
+      },
+      {
+        "ingredient": "Tamatar",
+        "quantity": "0.66",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Thoom Adrak",
+        "quantity": "0.06",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Zeera",
+        "quantity": "0.03",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "lemon",
+        "quantity": "1.5",
+        "unit": "kilograms"
+      }
+    ]
+  },
+  {
+    "dish_name": "Daal Chawal",
+    "persons": "52",
+    "ingredients": [
+      {
+        "ingredient": "Biryani masala",
+        "quantity": "1",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "masoor mong",
+        "quantity": "1",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Daal",
+        "quantity": "2",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Garm masala",
+        "quantity": "0.02",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "haldi",
+        "quantity": "0.03",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Oil",
+        "quantity": "2",
+        "unit": "litres"
+      },
+      {
+        "ingredient": "Piyaaz",
+        "quantity": "0.62",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "red chilli",
+        "quantity": "0.02",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "rice",
+        "quantity": "10",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "sabat dhania",
+        "quantity": "0.02",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Sabz Dhania",
+        "quantity": "1",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "sabz mirch",
+        "quantity": "0.2",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "salt",
+        "quantity": "0.26",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "lemon",
+        "quantity": "0.28",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Tamatar",
+        "quantity": "0.65",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Thoom Adrak",
+        "quantity": "0.018",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "Zeera",
+        "quantity": "0.06",
+        "unit": "kilograms"
+      },
+      {
+        "ingredient": "dara mirch",
+        "quantity": "0.02",
+        "unit": "kilograms"
+      }
+    ]
+  }
+]

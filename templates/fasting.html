@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel">
+    <h1>Fasting Tracker / روزہ ٹریکر</h1>
+    <form method="post">
+        <label for="duration_hours">Fasting duration select karein / روزے کا دورانیہ منتخب کریں</label>
+        <select id="duration_hours" name="duration_hours">
+            {% for hours in duration_options %}
+            <option value="{{ hours }}" {% if hours == current_target_hours %}selected{% endif %}>
+                {% if hours == 48 %}2 din (48 ghantay) / 2 دن{% else %}{{ hours }} ghantay / گھنٹے{% endif %}
+            </option>
+            {% endfor %}
+        </select>
+        <button type="submit" name="action" value="start">Fast Start / روزہ شروع کریں</button>
+        <button type="submit" name="action" value="stop">Fast End / روزہ ختم کریں</button>
+    </form>
+</section>
+
+<section class="panel">
+    <h2>Countdown / الٹی گنتی</h2>
+    <p class="timer" id="countdown">00:00:00</p>
+    <p class="muted">Time format / وقت کی ترتیب: hours : minutes : seconds</p>
+</section>
+
+<section class="panel">
+    <h2>Completion Status / تکمیل کی حالت</h2>
+    <div class="progress-wrap">
+        <div class="pie" id="pieChart" aria-label="Fasting completion chart / روزہ تکمیل چارٹ">
+            <span id="progressText">0%</span>
+        </div>
+        <p class="muted" id="progressDetail">Progress dekhne ke liye fast start karein / پیش رفت دیکھنے کے لیے روزہ شروع کریں</p>
+    </div>
+</section>
+
+<section class="panel">
+    <h2>Last Fasting Duration / آخری روزے کا دورانیہ</h2>
+    <p>{% if last_duration is not none %}{{ last_duration }} ghantay / گھنٹے{% else %}Koi pichla fast nahin / کوئی پچھلا روزہ نہیں{% endif %}</p>
+</section>
+
+<section class="panel">
+    <h2>Status / حالت</h2>
+    <p>{% if fasting_data.current_fast.is_active %}Active / جاری{% else %}Not active / بند{% endif %}</p>
+</section>
+
+<section class="panel">
+    <h2>Fasting History / روزہ ہسٹری</h2>
+    <ul>
+        {% for item in fasting_data.history %}
+        <li>
+            {{ item.start }} se {{ item.end }} tak / سے تک: {{ item.duration_hours }} ghantay / گھنٹے
+            {% if item.target_hours %}
+            (target {{ item.target_hours }}h{% if item.completion_percent is not none %}, {{ item.completion_percent }}% complete / مکمل{% endif %})
+            {% endif %}
+        </li>
+        {% else %}
+        <li class="muted">Abhi fasting history nahin / ابھی روزہ ہسٹری نہیں</li>
+        {% endfor %}
+    </ul>
+</section>
+
+<style>
+    #duration_hours {
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        font: inherit;
+        background: white;
+    }
+    .timer {
+        font-size: clamp(1.8rem, 4vw, 3rem);
+        letter-spacing: 0.08em;
+        font-variant-numeric: tabular-nums;
+        margin: 0;
+    }
+    .progress-wrap {
+        display: grid;
+        gap: 12px;
+        align-items: center;
+        justify-items: start;
+    }
+    .pie {
+        --pct: 0;
+        width: 170px;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: conic-gradient(var(--accent) calc(var(--pct) * 1%), #eadcc6 0);
+        position: relative;
+        box-shadow: inset 0 0 0 1px rgba(54, 36, 14, 0.08);
+    }
+    .pie::before {
+        content: "";
+        position: absolute;
+        width: 62%;
+        height: 62%;
+        border-radius: 50%;
+        background: var(--panel);
+    }
+    .pie span {
+        position: relative;
+        z-index: 1;
+        font-weight: 700;
+        font-size: 1.2rem;
+    }
+</style>
+
+<script>
+    (function () {
+        const isActive = {{ 'true' if fasting_data.current_fast.is_active else 'false' }};
+        let remainingSeconds = Number({{ remaining_seconds | int }});
+        const targetSeconds = Number({{ target_seconds | int }});
+        const countdownEl = document.getElementById("countdown");
+        const pieEl = document.getElementById("pieChart");
+        const progressTextEl = document.getElementById("progressText");
+        const progressDetailEl = document.getElementById("progressDetail");
+
+        function pad(value) {
+            return String(value).padStart(2, "0");
+        }
+
+        function formatHHMMSS(totalSeconds) {
+            const safeSeconds = Math.max(0, totalSeconds);
+            const hours = Math.floor(safeSeconds / 3600);
+            const minutes = Math.floor((safeSeconds % 3600) / 60);
+            const seconds = safeSeconds % 60;
+            return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+        }
+
+        function updateProgress() {
+            let pct = 0;
+            if (targetSeconds > 0) {
+                pct = Math.min(100, ((targetSeconds - remainingSeconds) / targetSeconds) * 100);
+            }
+            pieEl.style.setProperty("--pct", pct.toFixed(2));
+            progressTextEl.textContent = `${Math.round(pct)}%`;
+
+            if (!isActive) {
+                progressDetailEl.textContent = "Koi active fast nahin / کوئی جاری روزہ نہیں";
+                return;
+            }
+
+            if (remainingSeconds > 0) {
+                progressDetailEl.textContent = `${formatHHMMSS(remainingSeconds)} remaining / باقی`;
+            } else {
+                progressDetailEl.textContent = "Target poora ho gaya. Jaari rakhein ya fast end karein / ہدف مکمل ہو گیا";
+            }
+        }
+
+        function tick() {
+            countdownEl.textContent = formatHHMMSS(remainingSeconds);
+            updateProgress();
+
+            if (!isActive) {
+                return;
+            }
+
+            if (remainingSeconds > 0) {
+                remainingSeconds -= 1;
+            }
+            window.setTimeout(tick, 1000);
+        }
+
+        tick();
+    })();
+</script>
+{% endblock %}

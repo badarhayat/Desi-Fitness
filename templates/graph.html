@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel">
+    <h1>Progress Graph / پیش رفت گراف</h1>
+    {% if graph_url %}
+    <img src="{{ graph_url }}" alt="Progress graph / پیش رفت گراف" style="width: 100%; border-radius: 16px;">
+    {% else %}
+    <p class="muted">Graph banane ke liye weight, steps aur calories add karein / گراف کے لیے وزن، قدم اور کیلوریز شامل کریں</p>
+    {% endif %}
+</section>
+
+<section class="panel">
+    <h2>Progress Data / پیش رفت ڈیٹا</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Date / تاریخ</th>
+                <th>Weight / وزن</th>
+                <th>Steps / قدم</th>
+                <th>Calories Consumed / کھائی گئی</th>
+                <th>Calories Burned / جلائی گئی</th>
+                <th>Net Calories / خالص</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in graph_data %}
+            <tr>
+                <td>{{ row.date }}</td>
+                <td>{{ row.weight }}</td>
+                <td>{{ row.steps }}</td>
+                <td>{{ row.calories_consumed }}</td>
+                <td>{{ row.calories_burned }}</td>
+                <td>{{ row.net_calories }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="muted">Abhi koi progress record nahin / ابھی کوئی پیش رفت ریکارڈ نہیں</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

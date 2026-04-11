@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="{{ 'ur' if current_lang == 'urdu' else 'en' }}" dir="{{ 'rtl' if current_lang == 'urdu' else 'ltr' }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ t("Desi Fitness / دیسی فٹنس") }}</title>
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Hind:wght@400;500;700&family=Teko:wght@500;600&display=swap");
+
+        :root {
+            --bg-top: #f7e9cf;
+            --bg-bottom: #ead7b5;
+            --panel: #fff7ea;
+            --ink: #1f2d1f;
+            --muted: #66715d;
+            --accent: #b5532f;
+            --accent-dark: #8f3f22;
+            --accent-soft: #f2ceb6;
+            --mehndi: #2f6f3e;
+            --line: #e3d2b3;
+            --gold: #c99539;
+        }
+        body {
+            margin: 0;
+            font-family: "Hind", "Segoe UI", sans-serif;
+            background:
+                radial-gradient(circle at 10% 15%, rgba(201, 149, 57, 0.16) 0, transparent 32%),
+                radial-gradient(circle at 85% 20%, rgba(47, 111, 62, 0.14) 0, transparent 30%),
+                linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+            color: var(--ink);
+            min-height: 100vh;
+        }
+        .shell {
+            width: min(100%, 520px);
+            min-height: 100vh;
+            margin: 0 auto;
+            padding: 14px 14px 20px;
+            box-sizing: border-box;
+        }
+        .nav {
+            display: flex;
+            gap: 8px;
+            position: sticky;
+            top: 8px;
+            z-index: 100;
+            padding: 8px;
+            margin-bottom: 12px;
+            background: linear-gradient(180deg, rgba(255, 248, 236, 0.92), rgba(255, 245, 227, 0.98));
+            border: 1px solid rgba(143, 63, 34, 0.18);
+            border-radius: 14px;
+            backdrop-filter: blur(10px);
+            align-items: center;
+        }
+        .nav a {
+            text-decoration: none;
+            color: var(--accent-dark);
+            background: #fff2de;
+            border: 1px solid rgba(181, 83, 47, 0.2);
+            padding: 10px 8px;
+            border-radius: 12px;
+            flex: 1 1 0;
+            text-align: center;
+            font-size: 0.86rem;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(84, 50, 16, 0.1);
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+        .lang-form {
+            flex: 1 1 100%;
+            display: grid;
+        }
+        .lang-form select {
+            width: 100%;
+            padding: 8px 10px;
+            font-size: 0.8rem;
+            border-radius: 10px;
+        }
+        .nav a:active,
+        .nav a:hover {
+            background: var(--accent-soft);
+            transform: translateY(-1px);
+        }
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            padding: 18px;
+            margin-bottom: 14px;
+            box-shadow: 0 10px 24px rgba(75, 46, 20, 0.1);
+        }
+        h1, h2, h3 {
+            margin-top: 0;
+            line-height: 1;
+            font-family: "Teko", "Hind", sans-serif;
+            letter-spacing: 0.02em;
+        }
+        h1 {
+            font-size: clamp(2rem, 8vw, 2.6rem);
+            color: var(--accent-dark);
+        }
+        h2 {
+            font-size: clamp(1.4rem, 6vw, 2rem);
+            color: #73411f;
+        }
+        form {
+            display: grid;
+            gap: 12px;
+        }
+        input, button {
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            font: inherit;
+            box-sizing: border-box;
+            width: 100%;
+        }
+        select {
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            font: inherit;
+            background: white;
+            box-sizing: border-box;
+            width: 100%;
+        }
+        button {
+            background: linear-gradient(140deg, var(--accent) 0%, #c96735 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+            box-shadow: 0 8px 16px rgba(143, 63, 34, 0.25);
+        }
+        button:hover {
+            background: var(--accent-dark);
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 18px;
+        }
+        .muted {
+            color: var(--muted);
+        }
+        ul {
+            padding-left: 18px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid var(--line);
+            text-align: left;
+        }
+        .danger {
+            color: #8c1c13;
+        }
+        .hero {
+            display: grid;
+            gap: 10px;
+        }
+        a {
+            color: var(--mehndi);
+            font-weight: 700;
+        }
+        @media (min-width: 900px) {
+            body {
+                display: grid;
+                place-items: center;
+                padding: 20px;
+            }
+            .shell {
+                max-width: 460px;
+                border: 1px solid rgba(181, 83, 47, 0.2);
+                border-radius: 30px;
+                box-shadow: 0 20px 60px rgba(76, 46, 19, 0.2);
+                background: rgba(255, 248, 235, 0.5);
+                backdrop-filter: blur(4px);
+                padding: 14px 16px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <nav class="nav">
+            <a href="{{ url_for('home') }}">{{ t("Ghar / گھر") }}</a>
+            <a href="{{ url_for('register') }}">{{ t("Register / رجسٹر") }}</a>
+            <a href="{{ url_for('analyze') }}">{{ t("Khana / کھانا") }}</a>
+            <a href="{{ url_for('track') }}">{{ t("Tracking / ٹریکنگ") }}</a>
+            <a href="{{ url_for('fasting') }}">{{ t("Roza / روزہ") }}</a>
+            <a href="{{ url_for('graph') }}">{{ t("Graph / گراف") }}</a>
+            <form method="post" action="{{ url_for('set_language') }}" class="lang-form">
+                <input type="hidden" name="next" value="{{ request.path }}{% if request.query_string %}?{{ request.query_string.decode('utf-8') }}{% endif %}">
+                <select name="language" onchange="this.form.submit()" aria-label="Language Toggle">
+                    {% for key, label in language_options.items() %}
+                    <option value="{{ key }}" {% if key == current_lang %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </nav>
+        {% block content %}{% endblock %}
+    </div>
+    <script>
+        (function () {
+            const lang = "{{ current_lang }}";
+            const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+            const nodes = [];
+            while (walker.nextNode()) {
+                const node = walker.currentNode;
+                if (!node.nodeValue || !node.nodeValue.includes(" / ")) {
+                    continue;
+                }
+                const parent = node.parentElement;
+                if (!parent || ["SCRIPT", "STYLE"].includes(parent.tagName)) {
+                    continue;
+                }
+                nodes.push(node);
+            }
+
+            for (const node of nodes) {
+                const parts = node.nodeValue.split(" / ");
+                node.nodeValue = lang === "urdu" ? parts[parts.length - 1] : parts[0];
+            }
+
+            for (const input of document.querySelectorAll("input[placeholder]")) {
+                if (!input.placeholder.includes(" / ")) {
+                    continue;
+                }
+                const parts = input.placeholder.split(" / ");
+                input.placeholder = lang === "urdu" ? parts[parts.length - 1] : parts[0];
+            }
+        })();
+    </script>
+</body>
+</html>

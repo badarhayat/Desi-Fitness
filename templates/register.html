@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel">
+    <h1>User Registration / صارف رجسٹریشن</h1>
+    <p class="muted">Apni basic profile daalein takay dashboard personalize ho / اپنی بنیادی پروفائل ڈالیں تاکہ ڈیش بورڈ ذاتی بنے</p>
+
+    {% if error %}
+    <p class="danger">{{ error }}</p>
+    {% endif %}
+
+    <form method="post">
+        <label for="name">Name / نام</label>
+        <input id="name" name="name" value="{{ form_name }}" placeholder="Apna naam / اپنا نام" required>
+
+        <label for="height_feet">Height / قد</label>
+        <div class="height-row">
+            <input
+                id="height_feet"
+                name="height_feet"
+                type="number"
+                min="1"
+                max="9"
+                step="1"
+                value="{{ form_height_feet if form_height_feet is not none else '' }}"
+                placeholder="Feet / فٹ"
+                required
+            >
+            <input
+                id="height_inches"
+                name="height_inches"
+                type="number"
+                min="0"
+                max="11"
+                step="1"
+                value="{{ form_height_inches if form_height_inches is not none else '' }}"
+                placeholder="Inches / انچ"
+                required
+            >
+        </div>
+
+        <button type="submit">Register / رجسٹر کریں</button>
+    </form>
+</section>
+
+{% if profile and profile.is_registered %}
+<section class="panel">
+    <h2>Current Profile / موجودہ پروفائل</h2>
+    <p><strong>Name / نام:</strong> {{ profile.name }}</p>
+    <p><strong>Height / قد:</strong> {{ profile.height_feet }} ft {{ profile.height_inches }} in</p>
+</section>
+{% endif %}
+
+<style>
+    .height-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+</style>
+{% endblock %}
