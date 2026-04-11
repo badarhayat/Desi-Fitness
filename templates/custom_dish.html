@@ -2,8 +2,8 @@
 
 {% block content %}
 <section class="panel">
-    <h1>Custom Dish Banayein / اپنی ڈش بنائیں</h1>
-    <p class="muted">Apni marzi ki dish banayein aur future food logging ke liye save karein / اپنی مرضی کی ڈش بنائیں اور آئندہ فوڈ لاگنگ کے لیے محفوظ کریں</p>
+    <h1>{{ t("Custom Dish / اپنی ڈش بنائیں") }}</h1>
+    <p class="muted">{{ t("Create your own dish and save for future meal logging / اپنی مرضی کی ڈش بنائیں اور آئندہ فوڈ لاگنگ کے لیے محفوظ کریں") }}</p>
 
     {% if error %}
     <p class="danger">{{ error }}</p>
@@ -24,13 +24,15 @@
         <h2>Ingredients / اجزاء</h2>
         <div id="ingredient-list" class="ingredient-list"></div>
 
-        <button type="button" id="add-ingredient" class="secondary-btn">Ingredient Add Karein / جز شامل کریں</button>
-        <button type="submit">Dish Save Karein / ڈش محفوظ کریں</button>
+        <div class="split-actions">
+            <button type="button" id="add-ingredient" class="secondary-btn">{{ t("Add Ingredient / جز شامل کریں") }}</button>
+            <button type="submit">{{ t("Save Dish / ڈش محفوظ کریں") }}</button>
+        </div>
     </form>
 </section>
 
-<section class="panel">
-    <h2>Aap Ki Saved Dishes / آپ کی محفوظ ڈشز</h2>
+<section class="panel list-card">
+    <h2>{{ t("Saved Dishes / آپ کی محفوظ ڈشز") }}</h2>
     <ul>
         {% for dish in custom_dishes %}
         <li>{{ dish.dish_name }} ({{ dish.persons }} افراد)</li>
@@ -39,30 +41,6 @@
         {% endfor %}
     </ul>
 </section>
-
-<style>
-    .ingredient-list {
-        display: grid;
-        gap: 10px;
-    }
-    .ingredient-row {
-        display: grid;
-        grid-template-columns: 2fr 1fr 1fr auto;
-        gap: 8px;
-        align-items: center;
-    }
-    .remove-btn,
-    .secondary-btn {
-        background: #efddc5;
-        color: #6f341e;
-        box-shadow: none;
-    }
-    .remove-btn {
-        width: auto;
-        padding: 10px;
-        border: 1px solid rgba(143, 63, 34, 0.2);
-    }
-</style>
 
 <script>
     (function () {
@@ -79,7 +57,7 @@
                         <option value="litres">litres</option>
                         <option value="pieces">pieces</option>
                     </select>
-                    <button type="button" class="remove-btn">X</button>
+                    <button type="button" class="secondary-btn remove-btn">X</button>
                 </div>
             `;
         }

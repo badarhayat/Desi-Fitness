@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="panel">
+<section class="panel auth-card">
     <h1>{{ t('User Registration / صارف رجسٹریشن') }}</h1>
     <p class="muted">{{ t('Create your profile and choose a unique username / اپنی پروفائل بنائیں اور ایک منفرد صارف نام منتخب کریں') }}</p>
 
@@ -15,7 +15,7 @@
 
         <label for="username">{{ t('Username / یوزرنیم') }}</label>
         <input id="username" name="username" value="{{ form_username }}" placeholder="{{ t('Choose a unique username / ایک منفرد صارف نام منتخب کریں') }}" required>
-        <small>{{ t('Username will be used to log in / صارف نام لاگ ان کے لیے استعمال کیا جائے گا') }}</small>
+        <small class="form-help">{{ t('Username will be used to log in / صارف نام لاگ ان کے لیے استعمال کیا جائے گا') }}</small>
 
         <label for="height_feet">{{ t('Height / قد') }}</label>
         <div class="height-row">
@@ -51,36 +51,4 @@
         <a href="{{ url_for('login') }}">{{ t('Login here / یہاں لاگ ان کریں') }}</a>
     </p>
 </section>
-
-<style>
-    .height-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-    }
-    
-    small {
-        display: block;
-        margin-top: 4px;
-        color: #666;
-        font-size: 0.85rem;
-    }
-    
-    .auth-link {
-        text-align: center;
-        margin-top: 20px;
-        color: #666;
-        font-size: 0.95rem;
-    }
-    
-    .auth-link a {
-        color: var(--accent);
-        text-decoration: none;
-        font-weight: 600;
-    }
-    
-    .auth-link a:hover {
-        text-decoration: underline;
-    }
-</style>
 {% endblock %}

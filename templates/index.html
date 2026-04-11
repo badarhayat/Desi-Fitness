@@ -1,86 +1,61 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="panel">
-    <h1>Desi Fitness Dashboard / دیسی فٹنس ڈیش بورڈ</h1>
-    <p class="muted">Khana, progress aur roza aik jagah par track karein / کھانا، پیش رفت اور روزہ ایک جگہ ٹریک کریں</p>
+<section class="panel hero-panel">
+    <div class="hero-top">
+        <h1>{{ t("Fitness Dashboard / فٹنس ڈیش بورڈ") }}</h1>
+        <span class="date-pill">{{ today }}</span>
+    </div>
+    <p class="muted">{{ t("Meals, progress and fasting in one place / کھانا، پیش رفت اور روزہ ایک جگہ") }}</p>
     {% if profile and profile.is_registered %}
-    <p><strong>{{ profile.name }}</strong> | Height / قد: {{ profile.height_feet }} ft {{ profile.height_inches }} in</p>
+    <p class="hero-meta"><strong>{{ profile.name }}</strong> | {{ t("Height / قد") }}: {{ profile.height_feet }} ft {{ profile.height_inches }} in</p>
     {% else %}
-    <p class="muted">Register mein profile mukammal karein / رجسٹر میں پروفائل مکمل کریں</p>
+    <p class="muted">{{ t("Complete your profile in Register / رجسٹر میں پروفائل مکمل کریں") }}</p>
     {% endif %}
 </section>
 
-<section class="panel">
-    <h2>Aaj Ka Snapshot / آج کا خلاصہ ({{ today }})</h2>
-    <div class="snapshot-grid">
-        <div>
-            <h3>Khai Hui Calories / کھائی ہوئی کیلوریز</h3>
-            <div class="pie" id="caloriePie" style="--pct: {{ calories_percent }};">
+<section class="dashboard-grid">
+    <article class="panel stat-card">
+        <h2>{{ t("Calories / کیلوریز") }}</h2>
+        <div class="ring-wrap">
+            <div class="calorie-ring" style="--pct: {{ calories_percent }};">
                 <span>{{ calories_percent|round|int }}%</span>
             </div>
-            <p class="muted">{{ calories_eaten }} / {{ calories_target }} kcal</p>
         </div>
-        <div>
-            <h3>Mojooda Wazan / موجودہ وزن</h3>
-            {% if latest_weight is not none %}
-            <p class="weight-value">{{ latest_weight }} kg</p>
-            {% else %}
-            <p class="muted">Abhi koi wazan log nahin hua / ابھی کوئی وزن لاگ نہیں ہوا</p>
-            {% endif %}
+        <div class="progress-track">
+            <div class="progress-fill" style="width: {{ calories_percent }}%;"></div>
         </div>
-    </div>
+        <p class="muted">{{ calories_eaten }} / {{ calories_target }} kcal</p>
+    </article>
+
+    <article class="panel stat-card">
+        <h2>{{ t("Current Weight / موجودہ وزن") }}</h2>
+        {% if latest_weight is not none %}
+        <p class="value-lg">{{ latest_weight }} <span>kg</span></p>
+        {% else %}
+        <p class="muted">{{ t("No weight logged yet / ابھی کوئی وزن لاگ نہیں ہوا") }}</p>
+        {% endif %}
+        <a class="ghost-link" href="{{ url_for('track') }}">{{ t("Update in Track / ٹریک میں اپڈیٹ کریں") }}</a>
+    </article>
+
+    <article class="panel stat-card wide-card">
+        <h2>{{ t("BMI Status / BMI حالت") }}</h2>
+        {% if bmi is not none %}
+        <p class="value-lg">{{ bmi }}</p>
+        <p><strong>{{ t("Category / درجہ") }}:</strong> {{ bmi_category }}</p>
+        <p class="muted">{{ bmi_note }}</p>
+        <p class="muted">{{ t("Healthy BMI range / صحت مند BMI رینج") }}: 18.5 - 24.9</p>
+        <p class="muted">{{ t("Ideal weight range / بہتر وزن رینج") }}: {{ ideal_weight_range }}</p>
+        {% elif latest_weight is none %}
+        <p class="muted">{{ t("Log weight in Track to view BMI / BMI کے لئے ٹریک میں وزن لاگ کریں") }}</p>
+        {% else %}
+        <p class="muted">{{ t("Add height in Register for BMI / BMI کے لئے رجسٹر میں قد شامل کریں") }}</p>
+        {% endif %}
+    </article>
 </section>
 
-<section class="panel">
-    <h2>BMI Halaat / BMI حالت</h2>
-    {% if bmi is not none %}
-    <p class="weight-value">BMI {{ bmi }}</p>
-    <p><strong>Category / درجہ:</strong> {{ bmi_category }}</p>
-    <p class="muted">{{ bmi_note }}</p>
-    <p class="muted">Standard sehatmand BMI range / معیاری صحت مند BMI رینج: 18.5 - 24.9</p>
-    <p class="muted">Aap ke qad ke liye behtar wazan range / آپ کے قد کے لیے بہتر وزن رینج: {{ ideal_weight_range }}</p>
-    {% elif latest_weight is none %}
-    <p class="muted">BMI dekhne ke liye Track mein wazan log karein / BMI دیکھنے کے لیے ٹریک میں وزن لاگ کریں</p>
-    {% else %}
-    <p class="muted">BMI ke liye Register mein qad add karein / BMI کے لیے رجسٹر میں قد شامل کریں</p>
-    {% endif %}
+<section class="quick-actions">
+    <a class="action-btn" href="{{ url_for('analyze') }}">{{ t("Log Meal / کھانا شامل کریں") }}</a>
+    <a class="action-btn" href="{{ url_for('fasting') }}">{{ t("Start Fast / روزہ شروع کریں") }}</a>
 </section>
-
-<style>
-    .snapshot-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 20px;
-        align-items: center;
-    }
-    .pie {
-        width: 170px;
-        aspect-ratio: 1;
-        border-radius: 50%;
-        display: grid;
-        place-items: center;
-        background: conic-gradient(var(--accent) calc(var(--pct) * 1%), #eadcc6 0);
-        position: relative;
-    }
-    .pie::before {
-        content: "";
-        position: absolute;
-        width: 62%;
-        height: 62%;
-        border-radius: 50%;
-        background: var(--panel);
-    }
-    .pie span {
-        position: relative;
-        z-index: 1;
-        font-weight: 700;
-        font-size: 1.2rem;
-    }
-    .weight-value {
-        font-size: clamp(2rem, 5vw, 3rem);
-        margin: 8px 0;
-        font-variant-numeric: tabular-nums;
-    }
-</style>
 {% endblock %}

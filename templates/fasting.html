@@ -2,7 +2,7 @@
 
 {% block content %}
 <section class="panel">
-    <h1>Fasting Tracker / روزہ ٹریکر</h1>
+    <h1>{{ t("Fasting Tracker / روزہ ٹریکر") }}</h1>
     <form method="post">
         <label for="duration_hours">Fasting duration select karein / روزے کا دورانیہ منتخب کریں</label>
         <select id="duration_hours" name="duration_hours">
@@ -12,21 +12,23 @@
             </option>
             {% endfor %}
         </select>
-        <button type="submit" name="action" value="start">Fast Start / روزہ شروع کریں</button>
-        <button type="submit" name="action" value="stop">Fast End / روزہ ختم کریں</button>
+        <div class="split-actions">
+            <button type="submit" name="action" value="start">{{ t("Fast Start / روزہ شروع کریں") }}</button>
+            <button class="secondary-btn" type="submit" name="action" value="stop">{{ t("Fast End / روزہ ختم کریں") }}</button>
+        </div>
     </form>
 </section>
 
 <section class="panel">
     <h2>Countdown / الٹی گنتی</h2>
-    <p class="timer" id="countdown">00:00:00</p>
+    <p class="timer-text" id="countdown">00:00:00</p>
     <p class="muted">Time format / وقت کی ترتیب: hours : minutes : seconds</p>
 </section>
 
 <section class="panel">
     <h2>Completion Status / تکمیل کی حالت</h2>
-    <div class="progress-wrap">
-        <div class="pie" id="pieChart" aria-label="Fasting completion chart / روزہ تکمیل چارٹ">
+    <div class="metric-grid">
+        <div class="progress-ring" id="pieChart" aria-label="Fasting completion chart / روزہ تکمیل چارٹ">
             <span id="progressText">0%</span>
         </div>
         <p class="muted" id="progressDetail">Progress dekhne ke liye fast start karein / پیش رفت دیکھنے کے لیے روزہ شروع کریں</p>
@@ -45,6 +47,7 @@
 
 <section class="panel">
     <h2>Fasting History / روزہ ہسٹری</h2>
+    <div class="list-card">
     <ul>
         {% for item in fasting_data.history %}
         <li>
@@ -57,54 +60,8 @@
         <li class="muted">Abhi fasting history nahin / ابھی روزہ ہسٹری نہیں</li>
         {% endfor %}
     </ul>
+    </div>
 </section>
-
-<style>
-    #duration_hours {
-        padding: 10px 12px;
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        font: inherit;
-        background: white;
-    }
-    .timer {
-        font-size: clamp(1.8rem, 4vw, 3rem);
-        letter-spacing: 0.08em;
-        font-variant-numeric: tabular-nums;
-        margin: 0;
-    }
-    .progress-wrap {
-        display: grid;
-        gap: 12px;
-        align-items: center;
-        justify-items: start;
-    }
-    .pie {
-        --pct: 0;
-        width: 170px;
-        aspect-ratio: 1;
-        border-radius: 50%;
-        display: grid;
-        place-items: center;
-        background: conic-gradient(var(--accent) calc(var(--pct) * 1%), #eadcc6 0);
-        position: relative;
-        box-shadow: inset 0 0 0 1px rgba(54, 36, 14, 0.08);
-    }
-    .pie::before {
-        content: "";
-        position: absolute;
-        width: 62%;
-        height: 62%;
-        border-radius: 50%;
-        background: var(--panel);
-    }
-    .pie span {
-        position: relative;
-        z-index: 1;
-        font-weight: 700;
-        font-size: 1.2rem;
-    }
-</style>
 
 <script>
     (function () {

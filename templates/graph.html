@@ -2,9 +2,11 @@
 
 {% block content %}
 <section class="panel">
-    <h1>Progress Graph / پیش رفت گراف</h1>
+    <h1>{{ t("Progress Graph / پیش رفت گراف") }}</h1>
     {% if graph_url %}
-    <img src="{{ graph_url }}" alt="Progress graph / پیش رفت گراف" style="width: 100%; border-radius: 16px;">
+    <div class="image-card">
+        <img src="{{ graph_url }}" alt="Progress graph / پیش رفت گراف">
+    </div>
     {% else %}
     <p class="muted">Graph banane ke liye weight, steps aur calories add karein / گراف کے لیے وزن، قدم اور کیلوریز شامل کریں</p>
     {% endif %}

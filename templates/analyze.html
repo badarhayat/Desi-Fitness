@@ -2,8 +2,10 @@
 
 {% block content %}
 <section class="panel">
-    <h1>Food / کھانا</h1>
-    <p><a href="{{ url_for('custom_dish') }}">Apni Dish Banayein / اپنی ڈش بنائیں</a></p>
+    <div class="page-header">
+        <h1>{{ t("Food / کھانا") }}</h1>
+        <a class="ghost-link" href="{{ url_for('custom_dish') }}">{{ t("Create Dish / اپنی ڈش بنائیں") }}</a>
+    </div>
     <form method="post">
         <input id="current_preview_dish_name" type="hidden" name="current_preview_dish_name" value="{{ current_preview_dish_name }}">
 
@@ -32,11 +34,16 @@
 
         {% if editing_meal %}
         <input type="hidden" name="meal_id" value="{{ editing_meal.id }}">
-        <button type="submit" name="action" value="save">Meal Save Karein / میل محفوظ کریں</button>
+        <div class="split-actions">
+            <button type="submit" name="action" value="save">{{ t("Save Meal / میل محفوظ کریں") }}</button>
+            <button class="secondary-btn" type="submit" name="action" value="preview">{{ t("Preview / ڈش دیکھیں") }}</button>
+        </div>
         {% else %}
-        <button type="submit" name="action" value="add">Dish Log Karein / ڈش لاگ کریں</button>
+        <div class="split-actions">
+            <button type="submit" name="action" value="add">{{ t("Log Dish / ڈش لاگ کریں") }}</button>
+            <button class="secondary-btn" type="submit" name="action" value="preview">{{ t("Preview / ڈش دیکھیں") }}</button>
+        </div>
         {% endif %}
-        <button type="submit" name="action" value="preview">Preview Dish / ڈش دیکھیں</button>
     </form>
 </section>
 
@@ -117,8 +124,8 @@
 
 {% if logged_for_date %}
 <section class="panel">
-    <h2>{{ meal_date }} Ki Nutrition / غذائیت</h2>
-    <p class="muted">Logged dishes / لاگ ڈشز: {{ logged_dishes_display | join(", ") }}</p>
+    <h2>{{ meal_date }} {{ t("Nutrition / غذائیت") }}</h2>
+    <p class="muted">{{ t("Logged dishes / لاگ ڈشز") }}: {{ logged_dishes_display | join(", ") }}</p>
     
     <table>
         <thead>
@@ -192,7 +199,7 @@
 {% endif %}
 
 <section class="panel">
-    <h2>Meal Log / میل لاگ</h2>
+    <h2>{{ t("Meal Log / میل لاگ") }}</h2>
     <table>
         <thead>
             <tr>
@@ -217,14 +224,16 @@
                 <td>{{ meal.carbs }}</td>
                 <td>{{ meal.fat }}</td>
                 <td>
-                    <form method="post" style="display:inline;">
+                    <div class="inline-actions">
+                    <form method="post" class="inline-form">
                         <input type="hidden" name="meal_id" value="{{ meal.id }}">
-                        <button type="submit" name="action" value="edit">Edit</button>
+                        <button class="secondary-btn" type="submit" name="action" value="edit">{{ t("Edit / ترمیم") }}</button>
                     </form>
-                    <form method="post" style="display:inline;">
+                    <form method="post" class="inline-form">
                         <input type="hidden" name="meal_id" value="{{ meal.id }}">
-                        <button type="submit" name="action" value="delete">Delete</button>
+                        <button class="danger-btn" type="submit" name="action" value="delete">{{ t("Delete / حذف") }}</button>
                     </form>
+                    </div>
                 </td>
             </tr>
             {% else %}
