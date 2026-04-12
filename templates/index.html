@@ -33,6 +33,9 @@
 
     <article class="panel stat-card">
         <h2>{{ t("Net Calories / خالص کیلوریز") }}</h2>
+        <div class="mini-pie-wrap">
+            <img class="mini-pie" src="{{ net_vs_target_pie_url }}" alt="Net calories vs target / خالص کیلوریز بمقابلہ ہدف">
+        </div>
         <p class="muted">{{ t("Consumed") }}: {{ calories_eaten }} kcal</p>
         <p class="muted">{{ t("Burned") }}: {{ calories_burned_today }} kcal</p>
         <p class="muted">{{ t("Net") }}: {{ net_calories_today }} kcal</p>

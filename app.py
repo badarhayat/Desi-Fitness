@@ -593,6 +593,7 @@ def home():
         return login_check
     
     user_data = _get_current_user_data()
+    username = _get_current_username() or "user"
     today = _today()
     profile = user_data.get("profile", {})
     calories_target = profile.get("daily_calories_target") or DAILY_TARGETS["calories"]
@@ -611,6 +612,12 @@ def home():
         # Approximation based on 0.04 kcal per step and ~100 steps/min normal walk.
         walk_steps_needed = math.ceil(net_delta / 0.04)
         walk_minutes_needed = max(1, math.ceil(walk_steps_needed / 100))
+    net_vs_target_pie_url = _save_net_vs_target_pie(
+        username,
+        max(0.0, net_calories_today),
+        float(calories_target),
+        "home_net_vs_target_pie",
+    )
 
     latest_weight = None
     if user_data["weight_log"]:
@@ -661,6 +668,7 @@ def home():
         calories_percent_raw=calories_percent_raw,
         calories_over_percent=calories_over_percent,
         net_target_percent=net_target_percent,
+        net_vs_target_pie_url=net_vs_target_pie_url,
         net_delta=net_delta,
         net_status=net_status,
         walk_steps_needed=walk_steps_needed,
