@@ -53,6 +53,12 @@
 </section>
 {% endif %}
 
+{% if nutrition_item_saved %}
+<section class="panel">
+    <p>{{ nutrition_item_saved }} nutrition saved. Recalculated for this dish.</p>
+</section>
+{% endif %}
+
 {% if preview_dish %}
 <section class="panel" id="preview-panel">
     <h2>{{ dish_label(preview_dish.dish_name) }}</h2>
@@ -99,6 +105,29 @@
 
     {% if preview_dish.missing_nutrition_items %}
     <p class="muted">Items with missing nutrition reference: {{ preview_dish.missing_nutrition_items | join(", ") }}</p>
+
+    <h3>Add Nutrition for Missing Items / Missing item ki nutrition add karein</h3>
+    {% for item_name in preview_dish.missing_nutrition_items %}
+    {% set ing_unit = namespace(value='kilograms') %}
+    {% for ing in preview_dish.ingredients %}
+        {% if ing.name.lower() == item_name.lower() %}{% set ing_unit.value = ing.unit %}{% endif %}
+    {% endfor %}
+    {% if ing_unit.value == 'pieces' %}{% set unit_label = 'per piece' %}
+    {% elif ing_unit.value == 'litres' %}{% set unit_label = 'per litre' %}
+    {% else %}{% set unit_label = 'per kg' %}{% endif %}
+    <form method="post" action="{{ url_for('nutrition_item') }}" class="inline-form">
+        <input type="hidden" name="dish_name" value="{{ preview_dish.dish_name }}">
+        <input type="hidden" name="meal_date" value="{{ meal_date }}">
+        <input type="hidden" name="item_name" value="{{ item_name }}">
+        <input type="hidden" name="unit" value="{{ ing_unit.value }}">
+        <label>{{ item_name }} <span class="muted">({{ unit_label }})</span></label>
+        <input type="number" name="calories" step="0.001" min="0" placeholder="Calories {{ unit_label }}" required>
+        <input type="number" name="protein"  step="0.001" min="0" placeholder="Protein {{ unit_label }}" required>
+        <input type="number" name="carbs"    step="0.001" min="0" placeholder="Carbs {{ unit_label }}" required>
+        <input type="number" name="fat"      step="0.001" min="0" placeholder="Fat {{ unit_label }}" required>
+        <button type="submit" class="secondary-btn">Save Nutrition</button>
+    </form>
+    {% endfor %}
     {% endif %}
 </section>
 {% endif %}

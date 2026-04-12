@@ -2,22 +2,35 @@
 
 {% block content %}
 <section class="panel">
-    <h1>{{ t("Custom Dish / اپنی ڈش بنائیں") }}</h1>
+    <h1>
+        {% if editing_dish %}
+        {{ t("Edit Dish / ڈش میں ترمیم") }}
+        {% else %}
+        {{ t("Custom Dish / اپنی ڈش بنائیں") }}
+        {% endif %}
+    </h1>
     <p class="muted">{{ t("Create your own dish and save for future meal logging / اپنی مرضی کی ڈش بنائیں اور آئندہ فوڈ لاگنگ کے لیے محفوظ کریں") }}</p>
+    <p class="muted">Optional: har ingredient ke liye nutrition add karein. Kg/litre items ke liye per-kg/litre values; pieces ke liye per-piece values darj karein.</p>
 
     {% if error %}
     <p class="danger">{{ error }}</p>
     {% endif %}
 
+    {% if notice %}
+    <p>{{ notice }}</p>
+    {% endif %}
+
     <form method="post" id="custom-dish-form">
+        <input type="hidden" name="action" value="save_dish">
+        <input type="hidden" name="original_dish_name" value="{{ editing_dish.dish_name if editing_dish else '' }}">
         <label for="dish_name">Dish Name / ڈش کا نام</label>
-        <input id="dish_name" name="dish_name" placeholder="Misal: Family Omelette / مثال" required>
+        <input id="dish_name" name="dish_name" placeholder="Misal: Family Omelette / مثال" value="{{ editing_dish.dish_name if editing_dish else '' }}" required>
 
         <label for="persons">Serves (persons) / کتنے افراد کے لیے</label>
-        <input id="persons" name="persons" type="number" min="1" step="1" value="1" required>
+        <input id="persons" name="persons" type="number" min="1" step="1" value="{{ editing_dish.persons if editing_dish else 1 }}" required>
 
         <label>
-            <input type="checkbox" name="supports_rotis">
+            <input type="checkbox" name="supports_rotis" {% if editing_dish and editing_dish.supports_rotis %}checked{% endif %}>
             Is dish ke sath roti khayi jati hai (atta nutrition mein include nahin) / اس ڈش کے ساتھ روٹی کھائی جاتی ہے (آٹا غذائیت میں شامل نہیں)
         </label>
 
@@ -26,44 +39,175 @@
 
         <div class="split-actions">
             <button type="button" id="add-ingredient" class="secondary-btn">{{ t("Add Ingredient / جز شامل کریں") }}</button>
-            <button type="submit">{{ t("Save Dish / ڈش محفوظ کریں") }}</button>
+            <button type="submit">
+                {% if editing_dish %}
+                {{ t("Update Dish / ڈش اپڈیٹ کریں") }}
+                {% else %}
+                {{ t("Save Dish / ڈش محفوظ کریں") }}
+                {% endif %}
+            </button>
         </div>
+        {% if editing_dish %}
+        <a class="ghost-link" href="{{ url_for('custom_dish') }}">{{ t("Cancel Edit / ترمیم منسوخ") }}</a>
+        {% endif %}
     </form>
 </section>
 
 <section class="panel list-card">
     <h2>{{ t("Saved Dishes / آپ کی محفوظ ڈشز") }}</h2>
-    <ul>
-        {% for dish in custom_dishes %}
-        <li>{{ dish.dish_name }} ({{ dish.persons }} افراد)</li>
-        {% else %}
-        <li class="muted">Abhi koi custom dish nahin / ابھی کوئی کسٹم ڈش نہیں</li>
-        {% endfor %}
-    </ul>
+    <table>
+        <thead>
+            <tr>
+                <th>Dish</th>
+                <th>Persons</th>
+                <th>Roti</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for dish in custom_dishes %}
+            <tr>
+                <td>{{ dish.dish_name }}</td>
+                <td>{{ dish.persons }}</td>
+                <td>{{ "Yes" if dish.supports_rotis else "No" }}</td>
+                <td>
+                    <div class="inline-actions">
+                        <a class="action-btn secondary-btn" href="{{ url_for('custom_dish', edit_dish=dish.dish_name) }}">Edit</a>
+                        <form method="post" class="inline-form delete-dish-form">
+                            <input type="hidden" name="action" value="delete_dish">
+                            <input type="hidden" name="dish_name_to_delete" value="{{ dish.dish_name }}">
+                            <button type="submit" class="danger-btn">Delete</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="muted">Abhi koi custom dish nahin / ابھی کوئی کسٹم ڈش نہیں</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="panel">
+    <h2>Saved Nutrition Items / محفوظ غذائیت</h2>
+    <p class="muted">Edit form values are in the internal stored format (per 100g/ml, or per piece). Use "Add New" below for unit-aware entry.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Calories</th>
+                <th>Protein</th>
+                <th>Carbs</th>
+                <th>Fat</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in custom_nutrition_items %}
+            <tr>
+                <form method="post" class="nutrition-row-form">
+                    <input type="hidden" name="nutrition_item_name" value="{{ item.name }}">
+                    <input type="hidden" name="item_name" value="{{ item.name }}">
+                    <td>{{ item.name }}</td>
+                    <td><input type="number" step="0.001" min="0" name="calories" value="{{ item.calories }}" required></td>
+                    <td><input type="number" step="0.001" min="0" name="protein" value="{{ item.protein }}" required></td>
+                    <td><input type="number" step="0.001" min="0" name="carbs" value="{{ item.carbs }}" required></td>
+                    <td><input type="number" step="0.001" min="0" name="fat" value="{{ item.fat }}" required></td>
+                    <td>
+                        <div class="inline-actions">
+                            <button type="submit" name="action" value="save_nutrition_item" class="secondary-btn">Save</button>
+                            <button type="submit" name="action" value="delete_nutrition" class="danger-btn">Delete</button>
+                        </div>
+                    </td>
+                </form>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="muted">No custom nutrition items yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3>Add New Nutrition Item</h3>
+    <form method="post" id="nutrition-add-form" class="nutrition-add-form">
+        <input name="nutrition_item_name" placeholder="Item name" required>
+        <select name="nutrition_unit" id="nutrition-unit-select">
+            <option value="per_kg">per kg</option>
+            <option value="per_litre">per litre</option>
+            <option value="per_piece">per piece</option>
+        </select>
+        <input type="number" step="0.001" min="0" name="calories" id="new-cal" placeholder="Calories/kg" required>
+        <input type="number" step="0.001" min="0" name="protein" id="new-protein" placeholder="Protein/kg" required>
+        <input type="number" step="0.001" min="0" name="carbs" id="new-carbs" placeholder="Carbs/kg" required>
+        <input type="number" step="0.001" min="0" name="fat" id="new-fat" placeholder="Fat/kg" required>
+        <button type="submit" name="action" value="save_nutrition_item">Save</button>
+    </form>
 </section>
 
 <script>
     (function () {
         const ingredientList = document.getElementById("ingredient-list");
         const addButton = document.getElementById("add-ingredient");
+        const initialIngredients = {{ (editing_dish.ingredients if editing_dish else []) | tojson }};
+        const deleteDishForms = document.querySelectorAll(".delete-dish-form");
 
-        function ingredientRowHtml() {
+        function nutritionUnitLabel(unit) {
+            if (unit === "pieces") return "/piece";
+            if (unit === "litres") return "/litre";
+            return "/kg";
+        }
+
+        function updateNutritionPlaceholders(rowEl) {
+            const unitSelect = rowEl.querySelector("select[name='ingredient_unit']");
+            if (!unitSelect) return;
+            const lbl = nutritionUnitLabel(unitSelect.value);
+            const map = [
+                ["ingredient_calories", "Cal"],
+                ["ingredient_protein",  "Protein"],
+                ["ingredient_carbs",    "Carbs"],
+                ["ingredient_fat",      "Fat"],
+            ];
+            map.forEach(function ([fieldName, prefix]) {
+                const input = rowEl.querySelector("input[name='" + fieldName + "']");
+                if (input) input.placeholder = prefix + lbl + " (opt)";
+            });
+        }
+
+        function ingredientRowHtml(ingredient) {
+            const row = ingredient || {};
+            const name = row.name || "";
+            const quantity = row.quantity || "";
+            const unit = row.unit || "kilograms";
+            const lbl = nutritionUnitLabel(unit);
             return `
                 <div class="ingredient-row">
-                    <input name="ingredient_name" placeholder="Item name / جز کا نام" required>
-                    <input name="ingredient_quantity" type="number" step="0.001" min="0.001" placeholder="Qty / مقدار" required>
+                    <input name="ingredient_name" placeholder="Item name / جز کا نام" value="${name}" required>
+                    <input name="ingredient_quantity" type="number" step="0.001" min="0.001" placeholder="Qty / مقدار" value="${quantity}" required>
                     <select name="ingredient_unit">
-                        <option value="kilograms">kg</option>
-                        <option value="litres">litres</option>
-                        <option value="pieces">pieces</option>
+                        <option value="kilograms" ${unit === "kilograms" ? "selected" : ""}>kg</option>
+                        <option value="litres" ${unit === "litres" ? "selected" : ""}>litres</option>
+                        <option value="pieces" ${unit === "pieces" ? "selected" : ""}>pieces</option>
                     </select>
+                    <input name="ingredient_calories" type="number" step="0.001" min="0" placeholder="Cal${lbl} (opt)">
+                    <input name="ingredient_protein"  type="number" step="0.001" min="0" placeholder="Protein${lbl} (opt)">
+                    <input name="ingredient_carbs"    type="number" step="0.001" min="0" placeholder="Carbs${lbl} (opt)">
+                    <input name="ingredient_fat"      type="number" step="0.001" min="0" placeholder="Fat${lbl} (opt)">
                     <button type="button" class="secondary-btn remove-btn">X</button>
                 </div>
             `;
         }
 
-        function addRow() {
-            ingredientList.insertAdjacentHTML("beforeend", ingredientRowHtml());
+        function addRow(ingredient) {
+            ingredientList.insertAdjacentHTML("beforeend", ingredientRowHtml(ingredient));
+            // Attach change listener on the newly added row's unit select.
+            const rows = ingredientList.querySelectorAll(".ingredient-row");
+            const lastRow = rows[rows.length - 1];
+            const unitSelect = lastRow.querySelector("select[name='ingredient_unit']");
+            if (unitSelect) {
+                unitSelect.addEventListener("change", function () {
+                    updateNutritionPlaceholders(lastRow);
+                });
+            }
         }
 
         ingredientList.addEventListener("click", function (event) {
@@ -77,8 +221,50 @@
             event.target.closest(".ingredient-row").remove();
         });
 
-        addButton.addEventListener("click", addRow);
-        addRow();
+        addButton.addEventListener("click", function () {
+            addRow();
+        });
+
+        if (Array.isArray(initialIngredients) && initialIngredients.length) {
+            initialIngredients.forEach(addRow);
+        } else {
+            addRow();
+        }
+
+        deleteDishForms.forEach(function (form) {
+            form.addEventListener("submit", function (event) {
+                const dishNameField = form.querySelector("input[name='dish_name_to_delete']");
+                const dishName = dishNameField ? dishNameField.value : "this dish";
+                const shouldDelete = window.confirm(
+                    "Delete dish '" + dishName + "'? This action cannot be undone."
+                );
+                if (!shouldDelete) {
+                    event.preventDefault();
+                }
+            });
+        });
+
+        // Add-new nutrition item: live placeholder update when unit changes.
+        (function () {
+            const unitSel  = document.getElementById("nutrition-unit-select");
+            const calIn    = document.getElementById("new-cal");
+            const proIn    = document.getElementById("new-protein");
+            const carbsIn  = document.getElementById("new-carbs");
+            const fatIn    = document.getElementById("new-fat");
+            if (!unitSel) return;
+
+            function updateNewItemLabels() {
+                const u = unitSel.value;
+                const lbl = u === "per_piece" ? "/piece" : (u === "per_litre" ? "/litre" : "/kg");
+                if (calIn)   calIn.placeholder   = "Cal"     + lbl;
+                if (proIn)   proIn.placeholder   = "Protein" + lbl;
+                if (carbsIn) carbsIn.placeholder = "Carbs"   + lbl;
+                if (fatIn)   fatIn.placeholder   = "Fat"     + lbl;
+            }
+
+            unitSel.addEventListener("change", updateNewItemLabels);
+            updateNewItemLabels();
+        })();
     })();
 </script>
 {% endblock %}

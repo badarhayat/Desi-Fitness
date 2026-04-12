@@ -231,9 +231,35 @@ def _rebuild_daily_nutrition(user_data: dict) -> None:
     user_data["calories_log"] = calories_log
 
 
+def _get_user_nutrition_db(user_data: dict) -> dict[str, dict[str, float]]:
+    nutrition_db = {
+        key.lower(): {
+            "calories": float(value.get("calories", 0)),
+            "protein": float(value.get("protein", 0)),
+            "carbs": float(value.get("carbs", 0)),
+            "fat": float(value.get("fat", 0)),
+        }
+        for key, value in fitness_analysis.DEFAULT_NUTRITION_DB.items()
+    }
+
+    for key, value in user_data.get("custom_nutrition_db", {}).items():
+        normalized_key = str(key).strip().lower()
+        if not normalized_key:
+            continue
+        nutrition_db[normalized_key] = {
+            "calories": float(value.get("calories", 0)),
+            "protein": float(value.get("protein", 0)),
+            "carbs": float(value.get("carbs", 0)),
+            "fat": float(value.get("fat", 0)),
+        }
+
+    return nutrition_db
+
+
 def _get_dishes_with_nutrition(user_data: dict, file_paths: list[str] | None = None) -> list[dict]:
     dishes = []
     seen_keys = set()
+    nutrition_db = _get_user_nutrition_db(user_data)
 
     for file_path in (file_paths or DEFAULT_DISH_FILES):
         raw_path = Path(file_path)
@@ -252,7 +278,7 @@ def _get_dishes_with_nutrition(user_data: dict, file_paths: list[str] | None = N
                         "supports_rotis": bool(dish.get("supports_rotis", False)),
                     }
                     fitness_analysis.calculate_per_person(dish_copy)
-                    fitness_analysis.calculate_nutrition(dish_copy)
+                    fitness_analysis.calculate_nutrition(dish_copy, nutrition_db)
 
                     key = (dish_copy["dish_name"], dish_copy["persons"])
                     if key in seen_keys:
@@ -279,7 +305,7 @@ def _get_dishes_with_nutrition(user_data: dict, file_paths: list[str] | None = N
                 "supports_rotis": bool(custom_dish.get("supports_rotis", False)),
             }
             fitness_analysis.calculate_per_person(dish_copy)
-            fitness_analysis.calculate_nutrition(dish_copy)
+            fitness_analysis.calculate_nutrition(dish_copy, nutrition_db)
 
             key = (dish_copy["dish_name"], dish_copy["persons"])
             if key in seen_keys:
@@ -301,8 +327,13 @@ def _get_dishes_with_nutrition(user_data: dict, file_paths: list[str] | None = N
     return dishes
 
 
-def _roti_nutrition(rotis: int) -> dict[str, float]:
-    atta_nutrition = fitness_analysis.DEFAULT_NUTRITION_DB.get("atta", {})
+def _roti_nutrition(
+    rotis: int,
+    nutrition_db: dict[str, dict[str, float]] | None = None,
+) -> dict[str, float]:
+    atta_nutrition = (nutrition_db or fitness_analysis.DEFAULT_NUTRITION_DB).get(
+        "atta", fitness_analysis.DEFAULT_NUTRITION_DB.get("atta", {})
+    )
     grams_factor = (rotis * ATTA_GRAMS_PER_ROTI) / 100
     return {
         "calories": round(atta_nutrition.get("calories", 0) * grams_factor, 2),
@@ -317,9 +348,19 @@ def _meal_payload(
     date: str,
     rotis: int = 0,
     entry_id: int | None = None,
+    nutrition_db: dict[str, dict[str, float]] | None = None,
 ) -> dict:
     nutrition = dish.get("nutrition_per_person", {})
-    roti_nutrition = _roti_nutrition(rotis) if dish.get("supports_rotis") else _roti_nutrition(0)
+    atta_nutrition = (nutrition_db or fitness_analysis.DEFAULT_NUTRITION_DB).get(
+        "atta", fitness_analysis.DEFAULT_NUTRITION_DB.get("atta", {})
+    )
+    grams_factor = ((rotis if dish.get("supports_rotis") else 0) * ATTA_GRAMS_PER_ROTI) / 100
+    roti_nutrition = {
+        "calories": round(atta_nutrition.get("calories", 0) * grams_factor, 2),
+        "protein": round(atta_nutrition.get("protein", 0) * grams_factor, 2),
+        "carbs": round(atta_nutrition.get("carbs", 0) * grams_factor, 2),
+        "fat": round(atta_nutrition.get("fat", 0) * grams_factor, 2),
+    }
     payload = {
         "date": date,
         "dish_name": dish["dish_name"],
@@ -602,14 +643,97 @@ def custom_dish():
     
     user_data = _get_current_user_data()
     error = None
+    notice = request.args.get("notice", "").strip()
+    editing_dish_name = request.args.get("edit_dish", "").strip()
+    editing_dish = None
+
+    if editing_dish_name:
+        editing_dish = next(
+            (
+                dish
+                for dish in user_data.get("custom_dishes", [])
+                if dish.get("dish_name", "").lower() == editing_dish_name.lower()
+            ),
+            None,
+        )
 
     if request.method == "POST":
+        action = request.form.get("action", "save_dish").strip()
+
+        if action == "delete_dish":
+            dish_name_to_delete = request.form.get("dish_name_to_delete", "").strip()
+            if dish_name_to_delete:
+                existing = user_data.setdefault("custom_dishes", [])
+                existing[:] = [
+                    dish
+                    for dish in existing
+                    if dish.get("dish_name", "").lower() != dish_name_to_delete.lower()
+                ]
+                return redirect(
+                    url_for("custom_dish", notice=f"Deleted dish '{dish_name_to_delete}'.")
+                )
+            return redirect(url_for("custom_dish"))
+
+        if action == "delete_nutrition":
+            item_name = request.form.get("item_name", "").strip().lower()
+            if item_name:
+                custom_db = user_data.setdefault("custom_nutrition_db", {})
+                custom_db.pop(item_name, None)
+                return redirect(url_for("custom_dish", notice=f"Deleted nutrition for '{item_name}'."))
+            return redirect(url_for("custom_dish"))
+
+        if action == "save_nutrition_item":
+            item_name = request.form.get("nutrition_item_name", "").strip().lower()
+            calories_text = request.form.get("calories", "").strip()
+            protein_text = request.form.get("protein", "").strip()
+            carbs_text = request.form.get("carbs", "").strip()
+            fat_text = request.form.get("fat", "").strip()
+            # For standalone adds, accept a unit so we store in the correct internal format.
+            ni_unit = request.form.get("nutrition_unit", "per_100").strip().lower()
+
+            if not item_name:
+                error = "Nutrition item name is required."
+            else:
+                try:
+                    calories_value = float(calories_text)
+                    protein_value = float(protein_text)
+                    carbs_value = float(carbs_text)
+                    fat_value = float(fat_text)
+                    if any(
+                        value < 0
+                        for value in (calories_value, protein_value, carbs_value, fat_value)
+                    ):
+                        raise ValueError
+                except ValueError:
+                    error = (
+                        f"Enter valid non-negative nutrition values for ingredient '{item_name}'."
+                    )
+                else:
+                    # per_100 (default) → no conversion; per_kg/per_litre → ÷10; per_piece → ×1
+                    storage_factor = 0.1 if ni_unit in {"per_kg", "per_litre"} else 1.0
+                    custom_db = user_data.setdefault("custom_nutrition_db", {})
+                    custom_db[item_name] = {
+                        "calories": round(calories_value * storage_factor, 4),
+                        "protein": round(protein_value * storage_factor, 4),
+                        "carbs": round(carbs_value * storage_factor, 4),
+                        "fat": round(fat_value * storage_factor, 4),
+                    }
+                    return redirect(url_for("custom_dish", notice=f"Saved nutrition for '{item_name}'."))
+
+        if action != "save_dish":
+            return redirect(url_for("custom_dish"))
+
         dish_name = request.form.get("dish_name", "").strip()
+        original_dish_name = request.form.get("original_dish_name", "").strip()
         persons_raw = request.form.get("persons", "1").strip()
         supports_rotis = request.form.get("supports_rotis") == "on"
         ingredient_names = request.form.getlist("ingredient_name")
         ingredient_quantities = request.form.getlist("ingredient_quantity")
         ingredient_units = request.form.getlist("ingredient_unit")
+        ingredient_calories = request.form.getlist("ingredient_calories")
+        ingredient_protein = request.form.getlist("ingredient_protein")
+        ingredient_carbs = request.form.getlist("ingredient_carbs")
+        ingredient_fat = request.form.getlist("ingredient_fat")
 
         if not dish_name:
             error = "Dish name is required."
@@ -623,15 +747,24 @@ def custom_dish():
                 persons = 1
 
         parsed_ingredients = []
+        nutrition_updates: dict[str, dict[str, float]] = {}
         if error is None:
-            for name_raw, qty_raw, unit_raw in zip(
+            for name_raw, qty_raw, unit_raw, cal_raw, protein_raw, carbs_raw, fat_raw in zip(
                 ingredient_names,
                 ingredient_quantities,
                 ingredient_units,
+                ingredient_calories,
+                ingredient_protein,
+                ingredient_carbs,
+                ingredient_fat,
             ):
                 name = name_raw.strip()
                 qty_text = qty_raw.strip()
                 unit = unit_raw.strip().lower()
+                calories_text = cal_raw.strip()
+                protein_text = protein_raw.strip()
+                carbs_text = carbs_raw.strip()
+                fat_text = fat_raw.strip()
 
                 if not name and not qty_text:
                     continue
@@ -651,6 +784,43 @@ def custom_dish():
                     error = f"Choose a valid unit for ingredient '{name}'."
                     break
 
+                has_any_nutrition = any(
+                    text for text in (calories_text, protein_text, carbs_text, fat_text)
+                )
+                if has_any_nutrition and not all(
+                    text for text in (calories_text, protein_text, carbs_text, fat_text)
+                ):
+                    error = (
+                        f"Provide all nutrition fields (calories/protein/carbs/fat) for ingredient '{name}', "
+                        "or leave all of them blank."
+                    )
+                    break
+
+                if has_any_nutrition:
+                    try:
+                        calories_value = float(calories_text)
+                        protein_value = float(protein_text)
+                        carbs_value = float(carbs_text)
+                        fat_value = float(fat_text)
+                        if any(
+                            value < 0
+                            for value in (calories_value, protein_value, carbs_value, fat_value)
+                        ):
+                            raise ValueError
+                    except ValueError:
+                        error = f"Enter valid non-negative nutrition values for ingredient '{name}'."
+                        break
+
+                    # User enters per-kg or per-litre; internal DB stores per-100g/100ml.
+                    # For pieces the entered value is already per-piece, no conversion needed.
+                    storage_factor = 1.0 if unit == "pieces" else 0.1
+                    nutrition_updates[name.lower()] = {
+                        "calories": round(calories_value * storage_factor, 4),
+                        "protein": round(protein_value * storage_factor, 4),
+                        "carbs": round(carbs_value * storage_factor, 4),
+                        "fat": round(fat_value * storage_factor, 4),
+                    }
+
                 parsed_ingredients.append(
                     {
                         "name": name,
@@ -664,7 +834,14 @@ def custom_dish():
 
         if error is None:
             existing = user_data.setdefault("custom_dishes", [])
-            existing[:] = [dish for dish in existing if dish.get("dish_name", "").lower() != dish_name.lower()]
+            names_to_replace = {dish_name.lower()}
+            if original_dish_name:
+                names_to_replace.add(original_dish_name.lower())
+            existing[:] = [
+                dish
+                for dish in existing
+                if dish.get("dish_name", "").lower() not in names_to_replace
+            ]
             existing.append(
                 {
                     "dish_name": dish_name,
@@ -673,14 +850,37 @@ def custom_dish():
                     "supports_rotis": supports_rotis,
                 }
             )
+
+            if nutrition_updates:
+                custom_db = user_data.setdefault("custom_nutrition_db", {})
+                custom_db.update(nutrition_updates)
+
+            if original_dish_name:
+                return redirect(url_for("custom_dish", notice=f"Updated dish '{dish_name}'."))
+
             return redirect(url_for("analyze", dish_name=dish_name))
 
     return render_template(
         "custom_dish.html",
         error=error,
+        notice=notice,
+        editing_dish=editing_dish,
         custom_dishes=sorted(
             user_data.get("custom_dishes", []),
             key=lambda item: item.get("dish_name", "").lower(),
+        ),
+        custom_nutrition_items=sorted(
+            [
+                {
+                    "name": key,
+                    "calories": float(value.get("calories", 0)),
+                    "protein": float(value.get("protein", 0)),
+                    "carbs": float(value.get("carbs", 0)),
+                    "fat": float(value.get("fat", 0)),
+                }
+                for key, value in user_data.get("custom_nutrition_db", {}).items()
+            ],
+            key=lambda item: item["name"],
         ),
     )
 
@@ -692,6 +892,7 @@ def analyze():
         return login_check
     
     user_data = _get_current_user_data()
+    nutrition_db = _get_user_nutrition_db(user_data)
     dishes = _get_dishes_with_nutrition(user_data)
     dish_options = [
         {
@@ -710,6 +911,10 @@ def analyze():
     selected_rotis = form_source.get("rotis", "0").strip() or "0"
     editing_meal = None
     error = None
+    nutrition_item_saved = request.args.get("nutrition_item_saved", "").strip()
+
+    if request.method == "GET" and request.args.get("preview", "") == "1" and selected_dish is not None:
+        preview_dish = selected_dish
 
     if request.method == "POST":
         action = request.form.get("action", "preview")
@@ -748,6 +953,7 @@ def analyze():
                     meal_date,
                     rotis=rotis,
                     entry_id=int(meal_id) if meal_id else None,
+                    nutrition_db=nutrition_db,
                 )
                 if meal_id:
                     entry = _find_entry(user_data["meal_log"], int(meal_id))
@@ -782,13 +988,63 @@ def analyze():
         preview_dish=preview_dish,
         current_preview_dish_name=preview_dish["dish_name"] if preview_dish else "",
         selected_rotis=selected_rotis,
-        roti_nutrition_per_piece=_roti_nutrition(1),
+        roti_nutrition_per_piece=_roti_nutrition(1, nutrition_db),
         meal_date=meal_date,
         logged_for_date=logged_for_date,
         logged_dishes_display=logged_dishes_display,
         meal_log=sorted(user_data["meal_log"], key=lambda item: (item["date"], item["id"])),
         editing_meal=editing_meal,
         error=error,
+        nutrition_item_saved=nutrition_item_saved,
+    )
+
+
+@app.route("/nutrition-item", methods=["POST"])
+def nutrition_item():
+    login_check = _require_login()
+    if login_check:
+        return login_check
+
+    user_data = _get_current_user_data()
+    item_name = request.form.get("item_name", "").strip().lower()
+    dish_name = request.form.get("dish_name", "").strip()
+    meal_date = request.form.get("meal_date", "").strip() or _today()
+
+    if not item_name:
+        return redirect(url_for("analyze", dish_name=dish_name, meal_date=meal_date, preview="1"))
+
+    unit = request.form.get("unit", "kilograms").strip().lower()
+    if unit not in {"kilograms", "litres", "pieces"}:
+        unit = "kilograms"
+
+    try:
+        calories = float(request.form.get("calories", "").strip())
+        protein = float(request.form.get("protein", "").strip())
+        carbs = float(request.form.get("carbs", "").strip())
+        fat = float(request.form.get("fat", "").strip())
+        if any(value < 0 for value in (calories, protein, carbs, fat)):
+            raise ValueError
+    except ValueError:
+        return redirect(url_for("analyze", dish_name=dish_name, meal_date=meal_date, preview="1"))
+
+    # Convert from per-kg/litre to internal per-100g/100ml; pieces stay as-is.
+    storage_factor = 1.0 if unit == "pieces" else 0.1
+    custom_db = user_data.setdefault("custom_nutrition_db", {})
+    custom_db[item_name] = {
+        "calories": round(calories * storage_factor, 4),
+        "protein": round(protein * storage_factor, 4),
+        "carbs": round(carbs * storage_factor, 4),
+        "fat": round(fat * storage_factor, 4),
+    }
+
+    return redirect(
+        url_for(
+            "analyze",
+            dish_name=dish_name,
+            meal_date=meal_date,
+            preview="1",
+            nutrition_item_saved=item_name,
+        )
     )
 
 

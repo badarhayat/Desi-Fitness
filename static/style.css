@@ -493,6 +493,21 @@ td {
     align-items: center;
 }
 
+.nutrition-row-form {
+    display: contents;
+}
+
+.nutrition-row-form td input {
+    min-width: 110px;
+}
+
+.nutrition-add-form {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+    align-items: end;
+}
+
 .image-card img {
     width: 100%;
     border-radius: 14px;
@@ -558,6 +573,10 @@ small {
     }
 
     .ingredient-row {
+        grid-template-columns: 1fr;
+    }
+
+    .nutrition-add-form {
         grid-template-columns: 1fr;
     }
 
