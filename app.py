@@ -151,6 +151,19 @@ def _set_request_language() -> None:
     g.current_lang = _get_current_language()
 
 
+@app.after_request
+def _auto_save_user_data(response):
+    """Persist the current user's data to disk after every mutating request."""
+    if request.method == "POST":
+        username = _get_current_username()
+        if username and username in fitness_analysis.all_user_data:
+            try:
+                fitness_analysis._save_user_data(username)
+            except Exception:
+                pass  # Never let a save failure break the response
+    return response
+
+
 @app.context_processor
 def _language_context() -> dict:
     current_lang = getattr(g, "current_lang", "roman")
@@ -386,6 +399,21 @@ def _upsert_weight(user_data: dict, date: str, weight: float, entry_id: int | No
         entry = {"id": entry_id}
         user_data["weight_log"].append(entry)
     entry.update({"date": date, "weight": weight})
+    return entry
+
+
+def _upsert_exercise(user_data: dict, date: str, exercise_type: str, reps: int, entry_id: int | None = None) -> dict:
+    calories_lost = fitness_analysis.calculate_exercise_calories(exercise_type, reps)
+    log = user_data.setdefault("exercise_log", [])
+    if entry_id is None:
+        entry = {"id": _next_id(log), "date": date, "type": exercise_type, "reps": reps, "calories_lost": calories_lost}
+        log.append(entry)
+        return entry
+    entry = _find_entry(log, entry_id)
+    if entry is None:
+        entry = {"id": entry_id}
+        log.append(entry)
+    entry.update({"date": date, "type": exercise_type, "reps": reps, "calories_lost": calories_lost})
     return entry
 
 
@@ -1058,6 +1086,7 @@ def track():
     result = None
     editing_weight = None
     editing_steps = None
+    editing_exercise = None
 
     if request.method == "POST":
         action = request.form.get("action", "add")
@@ -1070,6 +1099,10 @@ def track():
             _delete_entry(user_data["steps_log"], int(request.form["steps_id"]))
             return redirect(url_for("track"))
 
+        if action == "delete_exercise":
+            _delete_entry(user_data.setdefault("exercise_log", []), int(request.form["exercise_id"]))
+            return redirect(url_for("track"))
+
         if action == "edit_weight":
             editing_weight = _find_entry(
                 user_data["weight_log"], int(request.form["weight_id"])
@@ -1078,6 +1111,11 @@ def track():
         if action == "edit_steps":
             editing_steps = _find_entry(
                 user_data["steps_log"], int(request.form["steps_id"])
+            )
+
+        if action == "edit_exercise":
+            editing_exercise = _find_entry(
+                user_data.setdefault("exercise_log", []), int(request.form["exercise_id"])
             )
 
         if action == "save_weight":
@@ -1096,14 +1134,82 @@ def track():
                 result = _upsert_steps(user_data, date, int(steps), int(entry_id) if entry_id else None)
                 return redirect(url_for("track"))
 
+        if action == "save_exercise":
+            date = request.form.get("exercise_date", _today()).strip() or _today()
+            ex_type = request.form.get("exercise_type", "pushups").strip()
+            reps_raw = request.form.get("reps", "").strip()
+            if reps_raw and ex_type in fitness_analysis.CALORIES_PER_REP:
+                entry_id = request.form.get("exercise_id", "").strip()
+                _upsert_exercise(user_data, date, ex_type, int(reps_raw), int(entry_id) if entry_id else None)
+                return redirect(url_for("track"))
+
+        if action == "save_height":
+            height_feet_raw = request.form.get("height_feet", "").strip()
+            height_inches_raw = request.form.get("height_inches", "").strip()
+            try:
+                height_feet = int(height_feet_raw)
+                height_inches = int(height_inches_raw)
+                if 1 <= height_feet <= 9 and 0 <= height_inches <= 11:
+                    height_cm = round(((height_feet * 12) + height_inches) * 2.54, 1)
+                    user_data.setdefault("profile", {}).update({
+                        "height_cm": height_cm,
+                        "height_feet": height_feet,
+                        "height_inches": height_inches,
+                    })
+            except (ValueError, TypeError):
+                pass
+            return redirect(url_for("track") + "#height-form")
+
+    profile = user_data.get("profile", {})
+    latest_weight = None
+    if user_data["weight_log"]:
+        latest_weight_entry = max(
+            user_data["weight_log"],
+            key=lambda item: (item.get("date", ""), item.get("id", 0)),
+        )
+        latest_weight = latest_weight_entry.get("weight")
+
+    bmi = None
+    bmi_category = None
+    bmi_note = None
+    ideal_weight_range = None
+    height_cm = profile.get("height_cm") if profile else None
+    if latest_weight is not None and height_cm:
+        height_m = float(height_cm) / 100
+        if height_m > 0:
+            bmi = round(float(latest_weight) / (height_m * height_m), 2)
+            ideal_low = round(18.5 * (height_m * height_m), 1)
+            ideal_high = round(24.9 * (height_m * height_m), 1)
+            ideal_weight_range = f"{ideal_low} kg - {ideal_high} kg"
+            if bmi < 18.5:
+                bmi_category = "Underweight"
+                bmi_note = "Below the standard healthy BMI range (18.5-24.9)."
+            elif bmi <= 24.9:
+                bmi_category = "Normal"
+                bmi_note = "Within the standard healthy BMI range (18.5-24.9)."
+            elif bmi <= 29.9:
+                bmi_category = "Overweight"
+                bmi_note = "Above the standard healthy BMI range (18.5-24.9)."
+            else:
+                bmi_category = "Obese"
+                bmi_note = "Well above the standard healthy BMI range (18.5-24.9)."
+
     return render_template(
         "track.html",
         result=result,
         today=_today(),
         weight_log=sorted(user_data["weight_log"], key=lambda item: (item["date"], item["id"])),
         steps_log=sorted(user_data["steps_log"], key=lambda item: (item["date"], item["id"])),
+        exercise_log=sorted(user_data.get("exercise_log", []), key=lambda item: (item["date"], item["id"])),
         editing_weight=editing_weight,
         editing_steps=editing_steps,
+        editing_exercise=editing_exercise,
+        profile=profile,
+        latest_weight=latest_weight,
+        bmi=bmi,
+        bmi_category=bmi_category,
+        bmi_note=bmi_note,
+        ideal_weight_range=ideal_weight_range,
     )
 
 

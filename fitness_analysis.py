@@ -19,6 +19,9 @@ from parse_dish import (
 # Multi-user data storage: keyed by username
 all_user_data = {}
 
+# Directory where per-user JSON files are saved
+DATA_DIR = Path(__file__).parent / "user_data"
+
 # Global fasting data - kept as-is for now, can be made per-user later
 fasting_data = {
     "current_fast": {
@@ -31,26 +34,62 @@ fasting_data = {
 }
 
 
+def _ensure_user_data_keys(data: dict) -> dict:
+    """Backfill any keys missing from older saves so the app never crashes."""
+    data.setdefault("weight_log", [])
+    data.setdefault("steps_log", [])
+    data.setdefault("calories_log", [])
+    data.setdefault("meal_log", [])
+    data.setdefault("nutrition_log", [])
+    data.setdefault("custom_dishes", [])
+    data.setdefault("custom_nutrition_db", {})
+    data.setdefault("exercise_log", [])
+    profile = data.setdefault("profile", {})
+    profile.setdefault("name", "")
+    profile.setdefault("height_cm", None)
+    profile.setdefault("height_feet", None)
+    profile.setdefault("height_inches", None)
+    profile.setdefault("is_registered", False)
+    return data
+
+
+def _save_user_data(username: str) -> None:
+    """Persist a single user's data to disk as JSON (atomic write)."""
+    DATA_DIR.mkdir(exist_ok=True)
+    path = DATA_DIR / f"{username}.json"
+    tmp = path.with_suffix(".tmp")
+    try:
+        with tmp.open("w", encoding="utf-8") as f:
+            json.dump(all_user_data[username], f, ensure_ascii=False, indent=2)
+        tmp.replace(path)
+    except Exception:
+        tmp.unlink(missing_ok=True)
+        raise
+
+
+def _load_all_users() -> None:
+    """Load all persisted user JSON files from DATA_DIR into all_user_data at startup."""
+    if not DATA_DIR.exists():
+        return
+    for fpath in DATA_DIR.glob("*.json"):
+        username = fpath.stem
+        try:
+            with fpath.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+            all_user_data[username] = _ensure_user_data_keys(data)
+        except Exception:
+            pass  # Skip corrupted or unreadable files
+
+
 def _get_or_create_user_data(username: str) -> dict:
     """Get or create user data dictionary for a given username."""
     if username not in all_user_data:
-        all_user_data[username] = {
-            "weight_log": [],
-            "steps_log": [],
-            "calories_log": [],
-            "meal_log": [],
-            "nutrition_log": [],
-            "custom_dishes": [],
-            "profile": {
-                "name": "",
-                "height_cm": None,
-                "height_feet": None,
-                "height_inches": None,
-                "is_registered": False,
-            },
-        }
+        all_user_data[username] = _ensure_user_data_keys({})
     return all_user_data[username]
 
+
+# Load all saved user data on module import
+_load_all_users()
 
 # Backward compatibility: provide default user_data
 user_data = _get_or_create_user_data("default")
@@ -85,6 +124,18 @@ def track_steps(date: str, steps: int) -> dict[str, Any]:
 
 def calculate_calories_burned(steps: int, calories_per_step: float = 0.04) -> float:
     return round(steps * calories_per_step, 2)
+
+
+# Calories burned per rep for bodyweight exercises (average adult ~70 kg)
+CALORIES_PER_REP: dict[str, float] = {
+    "pushups": 0.32,
+    "squats": 0.35,
+}
+
+
+def calculate_exercise_calories(exercise_type: str, reps: int) -> float:
+    rate = CALORIES_PER_REP.get(exercise_type, 0.3)
+    return round(reps * rate, 2)
 
 
 def start_fast(target_hours: int = 16) -> None:

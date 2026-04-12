@@ -1,6 +1,40 @@
 {% extends "base.html" %}
 
 {% block content %}
+
+<section class="grid">
+    <div class="panel" id="height-form">
+        <h2>{{ t("Height / قد") }}</h2>
+        {% if profile and profile.height_feet is not none %}
+        <p class="muted">{{ t("Current / موجودہ") }}: {{ profile.height_feet }} ft {{ profile.height_inches }} in</p>
+        {% endif %}
+        <form method="post">
+            <label>{{ t("Height / قد") }}</label>
+            <div class="height-row">
+                <input
+                    id="height_feet"
+                    name="height_feet"
+                    type="number"
+                    min="1" max="9"
+                    placeholder="5"
+                    value="{{ profile.height_feet if profile and profile.height_feet is not none else '' }}"
+                    required>
+                <span>ft</span>
+                <input
+                    id="height_inches"
+                    name="height_inches"
+                    type="number"
+                    min="0" max="11"
+                    placeholder="7"
+                    value="{{ profile.height_inches if profile and profile.height_inches is not none else '' }}"
+                    required>
+                <span>in</span>
+            </div>
+            <button type="submit" name="action" value="save_height">{{ t("Save Height / قد محفوظ کریں") }}</button>
+        </form>
+    </div>
+</section>
+
 <section class="grid">
     <div class="panel">
         <h1>{{ t("Weight Tracker / وزن ٹریک کریں") }}</h1>
@@ -32,6 +66,42 @@
             {% endif %}
             <button type="submit" name="action" value="save_steps">{% if editing_steps %}{{ t("Save Steps / قدم محفوظ") }}{% else %}{{ t("Add Steps / قدم شامل کریں") }}{% endif %}</button>
         </form>
+
+        <details class="steps-guide">
+            <summary>{{ t("Steps Reference Guide / قدم گائیڈ") }}</summary>
+            <div class="steps-guide-body">
+                <p class="muted" style="margin-bottom:0.75rem;">{{ t("Use these estimates to figure out your step count / اپنے قدم اندازہ لگانے کے لئے یہ استعمال کریں") }}</p>
+
+                <strong>{{ t("By Time (average pace) / وقت کے مطابق") }}</strong>
+                <table class="guide-table">
+                    <thead><tr><th>{{ t("Time / وقت") }}</th><th>{{ t("Approx Steps / تقریبی قدم") }}</th></tr></thead>
+                    <tbody>
+                        <tr><td>10 {{ t("min / منٹ") }}</td><td>~1,000</td></tr>
+                        <tr><td>15 {{ t("min / منٹ") }}</td><td>~1,500</td></tr>
+                        <tr><td>20 {{ t("min / منٹ") }}</td><td>~2,000</td></tr>
+                        <tr><td>30 {{ t("min / منٹ") }}</td><td>~3,000</td></tr>
+                        <tr><td>45 {{ t("min / منٹ") }}</td><td>~4,500</td></tr>
+                        <tr><td>60 {{ t("min / منٹ") }}</td><td>~6,000</td></tr>
+                        <tr><td>90 {{ t("min / منٹ") }}</td><td>~9,000</td></tr>
+                    </tbody>
+                </table>
+
+                <strong style="margin-top:1rem; display:block;">{{ t("By Distance / فاصلے کے مطابق") }}</strong>
+                <table class="guide-table">
+                    <thead><tr><th>{{ t("Distance / فاصلہ") }}</th><th>{{ t("Approx Steps / تقریبی قدم") }}</th></tr></thead>
+                    <tbody>
+                        <tr><td>0.5 km</td><td>~650</td></tr>
+                        <tr><td>1 km</td><td>~1,300</td></tr>
+                        <tr><td>2 km</td><td>~2,600</td></tr>
+                        <tr><td>3 km</td><td>~3,900</td></tr>
+                        <tr><td>5 km</td><td>~6,500</td></tr>
+                        <tr><td>8 km</td><td>~10,400</td></tr>
+                        <tr><td>10 km</td><td>~13,000</td></tr>
+                    </tbody>
+                </table>
+                <p class="muted" style="margin-top:0.5rem; font-size:0.8rem;">{{ t("Based on average stride ~0.75 m at normal walking pace / اوسط چال ~0.75 میٹر فی قدم پر") }}</p>
+            </div>
+        </details>
     </div>
 </section>
 
@@ -103,6 +173,71 @@
                 </tr>
                 {% else %}
                 <tr><td colspan="4" class="muted">Abhi koi step entry nahin / ابھی کوئی قدم اندراج نہیں</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="grid">
+    <div class="panel">
+        <h1>{{ t("Exercise Tracker / ورزش ٹریک کریں") }}</h1>
+        <form method="post">
+            <label for="exercise_date">Date / تاریخ</label>
+            <input id="exercise_date" type="date" name="exercise_date" value="{{ editing_exercise.date if editing_exercise else today }}">
+
+            <label for="exercise_type">Exercise / ورزش</label>
+            <select id="exercise_type" name="exercise_type">
+                <option value="pushups" {% if editing_exercise and editing_exercise.type == 'pushups' %}selected{% endif %}>Push-ups / پش اپ</option>
+                <option value="squats" {% if editing_exercise and editing_exercise.type == 'squats' %}selected{% endif %}>Squats / اسکواٹ</option>
+            </select>
+
+            <label for="reps">Reps / تعداد</label>
+            <input id="reps" name="reps" type="number" min="1" placeholder="30" value="{{ editing_exercise.reps if editing_exercise else '' }}">
+
+            {% if editing_exercise %}
+            <input type="hidden" name="exercise_id" value="{{ editing_exercise.id }}">
+            {% endif %}
+            <button type="submit" name="action" value="save_exercise">{% if editing_exercise %}{{ t("Save Exercise / ورزش محفوظ") }}{% else %}{{ t("Add Exercise / ورزش شامل کریں") }}{% endif %}</button>
+        </form>
+    </div>
+</section>
+
+<section class="grid">
+    <div class="panel" style="grid-column: 1 / -1;">
+        <h2>{{ t("Exercise Log / ورزش لاگ") }}</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date / تاریخ</th>
+                    <th>Exercise / ورزش</th>
+                    <th>Reps / تعداد</th>
+                    <th>Calories Burned / جلائی گئی کیلوریز</th>
+                    <th>Actions / کارروائی</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in exercise_log %}
+                <tr>
+                    <td>{{ item.date }}</td>
+                    <td>{% if item.type == 'pushups' %}Push-ups / پش اپ{% else %}Squats / اسکواٹ{% endif %}</td>
+                    <td>{{ item.reps }}</td>
+                    <td>{{ item.calories_lost }}</td>
+                    <td>
+                        <div class="inline-actions">
+                        <form method="post" class="inline-form">
+                            <input type="hidden" name="exercise_id" value="{{ item.id }}">
+                            <button class="secondary-btn" type="submit" name="action" value="edit_exercise">{{ t("Edit / ترمیم") }}</button>
+                        </form>
+                        <form method="post" class="inline-form">
+                            <input type="hidden" name="exercise_id" value="{{ item.id }}">
+                            <button class="danger-btn" type="submit" name="action" value="delete_exercise">{{ t("Delete / حذف") }}</button>
+                        </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="muted">{{ t("No exercise entries yet / ابھی کوئی ورزش اندراج نہیں") }}</td></tr>
                 {% endfor %}
             </tbody>
         </table>

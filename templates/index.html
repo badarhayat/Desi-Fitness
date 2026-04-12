@@ -49,7 +49,8 @@
         {% elif latest_weight is none %}
         <p class="muted">{{ t("Log weight in Track to view BMI / BMI کے لئے ٹریک میں وزن لاگ کریں") }}</p>
         {% else %}
-        <p class="muted">{{ t("Add height in Register for BMI / BMI کے لئے رجسٹر میں قد شامل کریں") }}</p>
+        <p class="muted">{{ t("Height not set for BMI / BMI کے لئے قد سیٹ نہیں") }}</p>
+        <a class="ghost-link" href="{{ url_for('track') }}#height-form">{{ t("Put Height in Track / ٹریک میں قد ڈالیں") }}</a>
         {% endif %}
     </article>
 </section>

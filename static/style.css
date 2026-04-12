@@ -551,6 +551,62 @@ small {
     gap: 10px;
 }
 
+/* Steps reference guide */
+.steps-guide {
+    margin-top: 1.25rem;
+}
+
+.steps-guide summary {
+    cursor: pointer;
+    color: var(--accent);
+    font-size: 0.88rem;
+    font-weight: 600;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.steps-guide summary::before {
+    content: "▶";
+    font-size: 0.65rem;
+    transition: transform 0.2s;
+}
+
+.steps-guide[open] summary::before {
+    transform: rotate(90deg);
+}
+
+.steps-guide-body {
+    margin-top: 0.75rem;
+}
+
+.guide-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+    margin-top: 0.4rem;
+}
+
+.guide-table th {
+    text-align: left;
+    color: var(--muted);
+    font-weight: 600;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--line);
+}
+
+.guide-table td {
+    padding: 5px 6px;
+    border-bottom: 1px solid var(--line);
+    color: var(--text-soft);
+}
+
+.guide-table tr:last-child td {
+    border-bottom: none;
+}
+
 @media (max-width: 560px) {
     .nav-link {
         flex: 1 1 calc(50% - 8px);
