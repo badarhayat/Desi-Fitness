@@ -5,13 +5,22 @@
     <h1>{{ t("Fasting Tracker / روزہ ٹریکر") }}</h1>
     <form method="post">
         <label for="duration_hours">Fasting duration select karein / روزے کا دورانیہ منتخب کریں</label>
-        <select id="duration_hours" name="duration_hours">
+        <select id="duration_hours" name="duration_hours" onchange="toggleCustomHours(this.value)">
             {% for hours in duration_options %}
             <option value="{{ hours }}" {% if hours == current_target_hours %}selected{% endif %}>
                 {% if hours == 48 %}2 din (48 ghantay) / 2 دن (48 گھنٹے){% else %}{{ hours }} ghantay / {{ hours }} گھنٹے{% endif %}
             </option>
             {% endfor %}
+            <option value="custom" {% if current_target_hours not in duration_options %}selected{% endif %}>
+                Custom / اپنی مرضی
+            </option>
         </select>
+        <div id="custom-hours-wrap" style="display:{% if current_target_hours not in duration_options %}block{% else %}none{% endif %}; margin-top:0.5rem;">
+            <label for="custom_hours">Custom ghante (1–168) / اپنے گھنٹے درج کریں</label>
+            <input type="number" id="custom_hours" name="custom_hours" min="1" max="168"
+                   value="{{ current_target_hours if current_target_hours not in duration_options else '' }}"
+                   placeholder="e.g. 22">
+        </div>
         <label for="start_time" style="margin-top:0.75rem;">
             Fast start time (leave blank for now / خالی چھوڑیں اگر ابھی شروع ہے):
         </label>
@@ -144,5 +153,9 @@
 
         tick();
     })();
+
+    function toggleCustomHours(val) {
+        document.getElementById("custom-hours-wrap").style.display = val === "custom" ? "block" : "none";
+    }
 </script>
 {% endblock %}

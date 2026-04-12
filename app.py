@@ -1339,19 +1339,24 @@ def fasting():
     if login_check:
         return login_check
     
-    duration_options = [16, 18, 20, 48]
+    duration_options = [12, 14, 16, 18, 20, 48]
 
     completed_fast = None
     if request.method == "POST":
         action = request.form.get("action")
         if action == "start":
             selected_hours_raw = request.form.get("duration_hours", "16").strip()
+            custom_hours_raw = request.form.get("custom_hours", "").strip()
             try:
-                selected_hours = int(selected_hours_raw)
-            except ValueError:
-                selected_hours = 16
-
-            if selected_hours not in duration_options:
+                if selected_hours_raw == "custom":
+                    selected_hours = int(custom_hours_raw)
+                    if not (1 <= selected_hours <= 168):
+                        selected_hours = 16
+                else:
+                    selected_hours = int(selected_hours_raw)
+                    if selected_hours not in duration_options:
+                        selected_hours = 16
+            except (ValueError, TypeError):
                 selected_hours = 16
 
             # Optional earlier start time
