@@ -48,6 +48,13 @@
         {% block content %}{% endblock %}
     </div>
     <script>
+        // Set user timezone offset cookie (minutes east of UTC)
+        (function () {
+            var offset = -(new Date().getTimezoneOffset());
+            document.cookie = 'tz_offset=' + offset + '; path=/; SameSite=Lax';
+        })();
+    </script>
+    <script>
         (function () {
             const lang = "{{ current_lang }}";
             const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import math
 from pathlib import Path
 
@@ -105,8 +105,21 @@ def _require_login():
     return None
 
 
+def _get_user_tz_offset() -> int:
+    """Return user's UTC offset in minutes (positive = east of UTC) from browser cookie."""
+    try:
+        return int(request.cookies.get("tz_offset", 0))
+    except (ValueError, TypeError):
+        return 0
+
+
+def _user_now() -> datetime:
+    """Current datetime adjusted to user's local timezone (naive)."""
+    return datetime.utcnow() + timedelta(minutes=_get_user_tz_offset())
+
+
 def _today() -> str:
-    return datetime.now().date().isoformat()
+    return _user_now().date().isoformat()
 
 
 def _get_current_language() -> str:
@@ -1352,7 +1365,7 @@ def fasting():
 
             fitness_analysis.start_fast(selected_hours, custom_start)
         elif action == "stop":
-            completed_fast = fitness_analysis.end_fast()
+            completed_fast = fitness_analysis.end_fast(now=_user_now())
 
     history = fitness_analysis.fasting_data["history"]
 
@@ -1369,14 +1382,15 @@ def fasting():
         secs = completed_fast.get("duration_seconds", 0)
         completed_parts = {"h": secs // 3600, "m": (secs % 3600) // 60, "s": secs % 60}
 
-    progress = fitness_analysis.get_fasting_progress()
+    user_now = _user_now()
+    progress = fitness_analysis.get_fasting_progress(now=user_now)
     current_target_hours = fitness_analysis.fasting_data["current_fast"].get("target_hours") or 16
-    now_iso = datetime.now().strftime("%Y-%m-%dT%H:%M")
+    now_iso = user_now.strftime("%Y-%m-%dT%H:%M")
 
     return render_template(
         "fasting.html",
         fasting_data=fitness_analysis.fasting_data,
-        fasting_duration=fitness_analysis.get_fasting_duration(),
+        fasting_duration=fitness_analysis.get_fasting_duration(now=user_now),
         last_duration_parts=last_duration_parts,
         duration_options=duration_options,
         current_target_hours=current_target_hours,

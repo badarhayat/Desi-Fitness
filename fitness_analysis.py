@@ -146,7 +146,7 @@ def start_fast(target_hours: int = 16, start_time: datetime = None) -> None:
 
     target_hours = max(1, int(target_hours))
 
-    effective_start = start_time if (start_time and start_time < datetime.now()) else datetime.now()
+    effective_start = start_time if (start_time and start_time < datetime.now()) else start_time if start_time else datetime.now()
     fasting_data["current_fast"]["start_time"] = effective_start
     fasting_data["current_fast"]["is_active"] = True
     fasting_data["current_fast"]["target_hours"] = target_hours
@@ -154,13 +154,13 @@ def start_fast(target_hours: int = 16, start_time: datetime = None) -> None:
     print("Fasting started")
 
 
-def end_fast() -> dict | None:
+def end_fast(now: datetime = None) -> dict | None:
     if not fasting_data["current_fast"]["is_active"]:
         print("No active fast")
         return None
 
     start = fasting_data["current_fast"]["start_time"]
-    end = datetime.now()
+    end = now if now is not None else datetime.now()
     total_seconds = int((end - start).total_seconds())
     duration = total_seconds / 3600
     target_hours = fasting_data["current_fast"].get("target_hours")
@@ -190,16 +190,17 @@ def end_fast() -> dict | None:
     return entry
 
 
-def get_fasting_duration() -> float:
+def get_fasting_duration(now: datetime = None) -> float:
     if not fasting_data["current_fast"]["is_active"]:
         return 0.0
 
     start = fasting_data["current_fast"]["start_time"]
-    duration = (datetime.now() - start).total_seconds() / 3600
+    _now = now if now is not None else datetime.now()
+    duration = (_now - start).total_seconds() / 3600
     return round(duration, 2)
 
 
-def get_fasting_progress() -> dict[str, float | int]:
+def get_fasting_progress(now: datetime = None) -> dict[str, float | int]:
     if not fasting_data["current_fast"].get("is_active"):
         return {
             "elapsed_seconds": 0,
@@ -217,7 +218,8 @@ def get_fasting_progress() -> dict[str, float | int]:
             "completion_percent": 0,
         }
 
-    elapsed_seconds = max(0, int((datetime.now() - start).total_seconds()))
+    _now = now if now is not None else datetime.now()
+    elapsed_seconds = max(0, int((_now - start).total_seconds()))
     target_seconds = fasting_data["current_fast"].get("target_seconds") or 0
     remaining_seconds = max(0, int(target_seconds) - elapsed_seconds) if target_seconds else 0
 
