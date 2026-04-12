@@ -2,8 +2,20 @@
 
 {% block content %}
 <section class="panel auth-card">
-    <h1>{{ t('User Registration / صارف رجسٹریشن') }}</h1>
-    <p class="muted">{{ t('Create your profile and choose a unique username / اپنی پروفائل بنائیں اور ایک منفرد صارف نام منتخب کریں') }}</p>
+    <h1>
+        {% if is_edit_mode %}
+        {{ t('Update Profile / پروفائل اپڈیٹ کریں') }}
+        {% else %}
+        {{ t('User Registration / صارف رجسٹریشن') }}
+        {% endif %}
+    </h1>
+    <p class="muted">
+        {% if is_edit_mode %}
+        {{ t('You can update your name and height here / یہاں آپ اپنا نام اور قد تبدیل کر سکتے ہیں') }}
+        {% else %}
+        {{ t('Create your profile and choose a unique username / اپنی پروفائل بنائیں اور ایک منفرد صارف نام منتخب کریں') }}
+        {% endif %}
+    </p>
 
     {% if error %}
     <p class="danger">{{ error }}</p>
@@ -14,8 +26,20 @@
         <input id="name" name="name" value="{{ form_name }}" placeholder="{{ t('Enter your name / اپنا نام درج کریں') }}" required>
 
         <label for="username">{{ t('Username / یوزرنیم') }}</label>
-        <input id="username" name="username" value="{{ form_username }}" placeholder="{{ t('Choose a unique username / ایک منفرد صارف نام منتخب کریں') }}" required>
-        <small class="form-help">{{ t('Username will be used to log in / صارف نام لاگ ان کے لیے استعمال کیا جائے گا') }}</small>
+        <input
+            id="username"
+            name="username"
+            value="{{ form_username }}"
+            placeholder="{{ t('Choose a unique username / ایک منفرد صارف نام منتخب کریں') }}"
+            {% if is_edit_mode %}readonly{% else %}required{% endif %}
+        >
+        <small class="form-help">
+            {% if is_edit_mode %}
+            {{ t('Username cannot be changed later / یوزرنیم بعد میں تبدیل نہیں ہو سکتا') }}
+            {% else %}
+            {{ t('Username will be used to log in / صارف نام لاگ ان کے لیے استعمال کیا جائے گا') }}
+            {% endif %}
+        </small>
 
         <label for="height_feet">{{ t('Height / قد') }}</label>
         <div class="height-row">
@@ -43,12 +67,20 @@
             >
         </div>
 
-        <button type="submit">{{ t('Register / رجسٹر کریں') }}</button>
+        <button type="submit">
+            {% if is_edit_mode %}
+            {{ t('Save Changes / تبدیلیاں محفوظ کریں') }}
+            {% else %}
+            {{ t('Register / رجسٹر کریں') }}
+            {% endif %}
+        </button>
     </form>
 
+    {% if not is_edit_mode %}
     <p class="auth-link">
         {{ t('Already have an account? / پہلے سے اکاؤنٹ ہے؟') }}
         <a href="{{ url_for('login') }}">{{ t('Login here / یہاں لاگ ان کریں') }}</a>
     </p>
+    {% endif %}
 </section>
 {% endblock %}

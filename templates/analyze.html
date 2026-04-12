@@ -15,22 +15,22 @@
         <label for="dish_name">Dish Select Karein / ڈش منتخب کریں</label>
         <select id="dish_name" name="dish_name">
             {% for dish in dish_options %}
-            <option value="{{ dish.value }}" {% if dish.value == selected_dish_name %}selected{% endif %}>{{ dish.label }}</option>
+            <option value="{{ dish.value }}" data-supports-rotis="{{ 'true' if dish.supports_rotis else 'false' }}" {% if dish.value == selected_dish_name %}selected{% endif %}>{{ dish.label }}</option>
             {% else %}
             <option value="">No dishes found / کوئی ڈش نہیں ملی</option>
             {% endfor %}
         </select>
 
-        {% if selected_dish and selected_dish.supports_rotis %}
+        <div id="roti-fields" {% if not (selected_dish and selected_dish.supports_rotis) %}hidden{% endif %}>
         <label for="rotis">Khayi hui rotian (1 roti = 110g atta) / کھائی ہوئی روٹیاں</label>
         <input id="rotis" type="number" min="0" step="1" name="rotis" value="{{ selected_rotis }}">
-        <p class="muted">
+        <p class="muted" id="roti-help-text">
             Har roti mein izafa: {{ roti_nutrition_per_piece.calories }} kcal,
             Protein {{ roti_nutrition_per_piece.protein }},
             Carbs {{ roti_nutrition_per_piece.carbs }},
             Fat {{ roti_nutrition_per_piece.fat }}
         </p>
-        {% endif %}
+        </div>
 
         {% if editing_meal %}
         <input type="hidden" name="meal_id" value="{{ editing_meal.id }}">
@@ -108,13 +108,32 @@
         const dishSelect = document.getElementById("dish_name");
         const currentPreviewInput = document.getElementById("current_preview_dish_name");
         const previewPanel = document.getElementById("preview-panel");
+        const rotiFields = document.getElementById("roti-fields");
+        const rotisInput = document.getElementById("rotis");
 
         if (!dishSelect || !currentPreviewInput) {
             return;
         }
 
+        function updateRotiFields() {
+            if (!rotiFields) {
+                return;
+            }
+
+            const selectedOption = dishSelect.options[dishSelect.selectedIndex];
+            const supportsRotis = selectedOption && selectedOption.dataset.supportsRotis === "true";
+            rotiFields.hidden = !supportsRotis;
+
+            if (!supportsRotis && rotisInput) {
+                rotisInput.value = "0";
+            }
+        }
+
+        updateRotiFields();
+
         dishSelect.addEventListener("change", function () {
             currentPreviewInput.value = "";
+            updateRotiFields();
             if (previewPanel) {
                 previewPanel.hidden = true;
             }

@@ -512,15 +512,20 @@ def home():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    current_username = _get_current_username()
+    is_edit_mode = current_username is not None
+    current_user_data = _get_current_user_data() if is_edit_mode else None
+    current_profile = current_user_data.get("profile", {}) if current_user_data else {}
+
     error = None
-    form_name = ""
-    form_username = ""
-    form_height_feet = None
-    form_height_inches = None
+    form_name = current_profile.get("name", "")
+    form_username = current_username or ""
+    form_height_feet = current_profile.get("height_feet")
+    form_height_inches = current_profile.get("height_inches")
 
     if request.method == "POST":
         name = request.form.get("name", "").strip()
-        username = request.form.get("username", "").strip().lower()
+        username = current_username or request.form.get("username", "").strip().lower()
         height_feet_raw = request.form.get("height_feet", "").strip()
         height_inches_raw = request.form.get("height_inches", "").strip()
 
@@ -532,9 +537,11 @@ def register():
         # Validation
         if not name:
             error = "Name is required."
-        elif not username:
+        elif not is_edit_mode and not username:
             error = "Username is required."
-        elif username in fitness_analysis.all_user_data:
+        elif not height_feet_raw or not height_inches_raw:
+            error = "Height in feet and inches is required."
+        elif not is_edit_mode and username in fitness_analysis.all_user_data:
             error = "Username already taken. Choose another."
         else:
             try:
@@ -547,10 +554,9 @@ def register():
             except ValueError:
                 error = "Enter a valid height in feet and inches (inches 0-11)."
             else:
-                # Create new user account
                 total_inches = (height_feet * 12) + height_inches
                 height_cm = round(total_inches * 2.54, 1)
-                
+
                 user_data = fitness_analysis._get_or_create_user_data(username)
                 user_data["profile"].update(
                     {
@@ -561,8 +567,7 @@ def register():
                         "is_registered": True,
                     }
                 )
-                
-                # Log them in
+
                 session["username"] = username
                 return redirect(url_for("home"))
 
@@ -573,6 +578,7 @@ def register():
         form_username=form_username,
         form_height_feet=form_height_feet,
         form_height_inches=form_height_inches,
+        is_edit_mode=is_edit_mode,
     )
 
 
@@ -687,7 +693,14 @@ def analyze():
     
     user_data = _get_current_user_data()
     dishes = _get_dishes_with_nutrition(user_data)
-    dish_options = [{"value": dish["dish_name"], "label": dish["display_name"]} for dish in dishes]
+    dish_options = [
+        {
+            "value": dish["dish_name"],
+            "label": dish["display_name"],
+            "supports_rotis": bool(dish.get("supports_rotis", False)),
+        }
+        for dish in dishes
+    ]
     form_source = request.form if request.method == "POST" else request.args
     selected_dish_name = form_source.get("dish_name", "")
     current_preview_dish_name = form_source.get("current_preview_dish_name", "")
