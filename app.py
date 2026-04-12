@@ -599,7 +599,9 @@ def home():
     net_calories_today, calories_eaten, calories_burned_today = _calculate_daily_net_calories(
         user_data, today
     )
-    calories_percent = round(min(100.0, (calories_eaten / calories_target) * 100), 2) if calories_target else 0.0
+    calories_percent_raw = round((calories_eaten / calories_target) * 100, 2) if calories_target else 0.0
+    calories_percent = min(100.0, calories_percent_raw)
+    calories_over_percent = round(max(0.0, calories_percent_raw - 100.0), 2)
     net_target_percent = round(
         min(100.0, max(0.0, (net_calories_today / calories_target) * 100)), 2
     ) if calories_target else 0.0
@@ -656,6 +658,8 @@ def home():
         net_calories_today=net_calories_today,
         calories_target=calories_target,
         calories_percent=calories_percent,
+        calories_percent_raw=calories_percent_raw,
+        calories_over_percent=calories_over_percent,
         net_target_percent=net_target_percent,
         net_vs_target_pie_url=net_vs_target_pie_url,
         latest_weight=latest_weight,
@@ -1350,7 +1354,6 @@ def graph():
         return login_check
     
     user_data = _get_current_user_data()
-    username = _get_current_username() or "user"
     profile = user_data.setdefault("profile", {})
 
     if request.method == "POST":
@@ -1376,23 +1379,48 @@ def graph():
         graph_path = static_dir / "progress_graph.png"
 
         dates = [row["date"] for row in graph_data]
-        weights = [row["weight"] for row in graph_data]
-        net_calories = [row["net_calories"] for row in graph_data]
+        weights = [row["weight"] if row["weight"] is not None else float("nan") for row in graph_data]
+        net_calories = [
+            row["net_calories"] if row["net_calories"] is not None else float("nan")
+            for row in graph_data
+        ]
 
-        fig, ax1 = plt.subplots(figsize=(10, 5))
-        ax1.plot(dates, weights, color="blue", marker="o")
-        ax1.set_xlabel("Date")
-        ax1.set_ylabel("Weight (kg)", color="blue")
-        ax1.tick_params(axis="y", labelcolor="blue")
+        fig, ax1 = plt.subplots(figsize=(11, 5.6), dpi=140)
+        ax1.plot(
+            dates,
+            weights,
+            color="#2563eb",
+            marker="o",
+            linewidth=2.2,
+            markersize=5,
+            label="Weight (kg)",
+        )
+        ax1.set_xlabel("Date", color="#0f172a")
+        ax1.set_ylabel("Weight (kg)", color="#2563eb")
+        ax1.tick_params(axis="y", labelcolor="#2563eb")
+        ax1.tick_params(axis="x", rotation=35, labelsize=8)
+        ax1.grid(axis="y", linestyle="--", alpha=0.28)
 
         ax2 = ax1.twinx()
-        ax2.plot(dates, net_calories, color="green", marker="^", linestyle="--")
-        ax2.set_ylabel("Net Calories", color="green")
-        ax2.tick_params(axis="y", labelcolor="green")
+        ax2.plot(
+            dates,
+            net_calories,
+            color="#16a34a",
+            marker="^",
+            linestyle="-",
+            linewidth=2.2,
+            markersize=5,
+            label="Net Calories",
+        )
+        ax2.set_ylabel("Net Calories", color="#16a34a")
+        ax2.tick_params(axis="y", labelcolor="#16a34a")
 
-        plt.title("Weight and Net Calories Over Time")
+        lines_1, labels_1 = ax1.get_legend_handles_labels()
+        lines_2, labels_2 = ax2.get_legend_handles_labels()
+        ax1.legend(lines_1 + lines_2, labels_1 + labels_2, loc="upper left")
+        plt.title("Weight and Net Calories Over Time", fontsize=12, fontweight="bold")
         fig.tight_layout()
-        fig.savefig(graph_path)
+        fig.savefig(graph_path, dpi=160, bbox_inches="tight")
         plt.close(fig)
         graph_url = url_for("static", filename="progress_graph.png")
 

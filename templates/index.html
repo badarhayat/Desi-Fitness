@@ -19,13 +19,16 @@
         <h2>{{ t("Calories / کیلوریز") }}</h2>
         <div class="ring-wrap">
             <div class="calorie-ring" style="--pct: {{ calories_percent }};">
-                <span>{{ calories_percent|round|int }}%</span>
+                <span>{{ calories_percent_raw|round|int }}%</span>
             </div>
         </div>
         <div class="progress-track">
             <div class="progress-fill" style="width: {{ calories_percent }}%;"></div>
         </div>
         <p class="muted">{{ calories_eaten }} / {{ calories_target }} kcal</p>
+        {% if calories_over_percent > 0 %}
+        <p class="muted" style="color:#f97316;">{{ t("Over target by / ہدف سے زیادہ") }} {{ calories_over_percent|round|int }}%</p>
+        {% endif %}
     </article>
 
     <article class="panel stat-card">
