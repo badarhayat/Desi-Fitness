@@ -483,6 +483,83 @@ def _build_graph_rows(user_data: dict) -> list[dict]:
     return rows
 
 
+def _calculate_daily_net_calories(user_data: dict, date: str) -> tuple[float, float, float]:
+    """Return (net, consumed, burned) calories for a given date."""
+    consumed_entry = next(
+        (entry for entry in user_data.get("nutrition_log", []) if entry.get("date") == date),
+        None,
+    )
+    consumed = float(consumed_entry.get("calories", 0.0)) if consumed_entry else 0.0
+    burned_steps = sum(
+        float(entry.get("calories_lost", 0.0))
+        for entry in user_data.get("steps_log", [])
+        if entry.get("date") == date
+    )
+    burned_exercise = sum(
+        float(entry.get("calories_lost", 0.0))
+        for entry in user_data.get("exercise_log", [])
+        if entry.get("date") == date
+    )
+    burned = burned_steps + burned_exercise
+    return round(consumed - burned, 2), round(consumed, 2), round(burned, 2)
+
+
+def _save_net_vs_target_pie(
+    username: str,
+    net_calories: float,
+    target_calories: float,
+    file_stem: str,
+) -> str:
+    """Generate a pie chart image and return its static URL."""
+    safe_target = target_calories if target_calories > 0 else DAILY_TARGETS["calories"]
+    within_target = max(0.0, min(net_calories, safe_target))
+    remaining = max(0.0, safe_target - within_target)
+    over_target = max(0.0, net_calories - safe_target)
+
+    values: list[float] = []
+    labels: list[str] = []
+    colors: list[str] = []
+    if within_target > 0:
+        values.append(within_target)
+        labels.append("Net")
+        colors.append("#22c55e")
+    if remaining > 0:
+        values.append(remaining)
+        labels.append("Remaining")
+        colors.append("#334155")
+    if over_target > 0:
+        values.append(over_target)
+        labels.append("Over")
+        colors.append("#f97316")
+    if not values:
+        values = [1.0]
+        labels = ["No data"]
+        colors = ["#64748b"]
+
+    safe_user = "".join(ch if ch.isalnum() else "_" for ch in (username or "user"))
+    static_dir = Path(app.root_path) / "static"
+    static_dir.mkdir(exist_ok=True)
+    out_path = static_dir / f"{file_stem}_{safe_user}.png"
+
+    fig, ax = plt.subplots(figsize=(4.8, 4.8))
+    ax.pie(
+        values,
+        labels=labels,
+        autopct="%1.0f%%",
+        startangle=90,
+        colors=colors,
+        textprops={"color": "white", "fontsize": 10},
+    )
+    ax.axis("equal")
+    ax.set_title("Net Calories vs Target", color="white")
+    fig.patch.set_facecolor("#0f172a")
+    ax.set_facecolor("#0f172a")
+    fig.tight_layout()
+    fig.savefig(out_path, transparent=False)
+    plt.close(fig)
+    return url_for("static", filename=out_path.name)
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     """Login page for existing users."""
@@ -515,14 +592,23 @@ def home():
         return login_check
     
     user_data = _get_current_user_data()
+    username = _get_current_username() or "user"
     today = _today()
-    today_nutrition = next(
-        (entry for entry in user_data["nutrition_log"] if entry["date"] == today),
-        None,
+    profile = user_data.get("profile", {})
+    calories_target = profile.get("daily_calories_target") or DAILY_TARGETS["calories"]
+    net_calories_today, calories_eaten, calories_burned_today = _calculate_daily_net_calories(
+        user_data, today
     )
-    calories_eaten = round(today_nutrition["calories"], 2) if today_nutrition else 0.0
-    calories_target = DAILY_TARGETS["calories"]
     calories_percent = round(min(100.0, (calories_eaten / calories_target) * 100), 2) if calories_target else 0.0
+    net_target_percent = round(
+        min(100.0, max(0.0, (net_calories_today / calories_target) * 100)), 2
+    ) if calories_target else 0.0
+    net_vs_target_pie_url = _save_net_vs_target_pie(
+        username,
+        max(0.0, net_calories_today),
+        float(calories_target),
+        "home_net_vs_target_pie",
+    )
 
     latest_weight = None
     if user_data["weight_log"]:
@@ -531,8 +617,6 @@ def home():
             key=lambda item: (item.get("date", ""), item.get("id", 0)),
         )
         latest_weight = latest_weight_entry.get("weight")
-
-    profile = user_data.get("profile", {})
 
     bmi = None
     bmi_category = None
@@ -568,8 +652,12 @@ def home():
         "index.html",
         today=today,
         calories_eaten=calories_eaten,
+        calories_burned_today=calories_burned_today,
+        net_calories_today=net_calories_today,
         calories_target=calories_target,
         calories_percent=calories_percent,
+        net_target_percent=net_target_percent,
+        net_vs_target_pie_url=net_vs_target_pie_url,
         latest_weight=latest_weight,
         profile=profile,
         bmi=bmi,
@@ -1255,13 +1343,30 @@ def fasting():
     )
 
 
-@app.route("/graph")
+@app.route("/graph", methods=["GET", "POST"])
 def graph():
     login_check = _require_login()
     if login_check:
         return login_check
     
     user_data = _get_current_user_data()
+    username = _get_current_username() or "user"
+    profile = user_data.setdefault("profile", {})
+
+    if request.method == "POST":
+        raw_target = request.form.get("daily_calories_target", "").strip()
+        if raw_target:
+            try:
+                parsed_target = int(raw_target)
+                if 500 <= parsed_target <= 10000:
+                    profile["daily_calories_target"] = parsed_target
+            except ValueError:
+                pass
+        else:
+            profile["daily_calories_target"] = None
+        return redirect(url_for("graph", saved="1"))
+
+    current_target = profile.get("daily_calories_target") or DAILY_TARGETS["calories"]
     graph_data = _build_graph_rows(user_data)
     graph_url = None
 
@@ -1291,7 +1396,13 @@ def graph():
         plt.close(fig)
         graph_url = url_for("static", filename="progress_graph.png")
 
-    return render_template("graph.html", graph_data=graph_data, graph_url=graph_url)
+    return render_template(
+        "graph.html",
+        graph_data=graph_data,
+        graph_url=graph_url,
+        current_target=current_target,
+        target_saved=request.args.get("saved") == "1",
+    )
 
 
 if __name__ == "__main__":

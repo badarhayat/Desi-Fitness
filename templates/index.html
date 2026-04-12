@@ -29,6 +29,15 @@
     </article>
 
     <article class="panel stat-card">
+        <h2>{{ t("Net vs Target / خالص بمقابلہ ہدف") }}</h2>
+        <div class="mini-pie-wrap">
+            <img class="mini-pie" src="{{ net_vs_target_pie_url }}" alt="Net calories vs target / خالص کیلوریز بمقابلہ ہدف">
+        </div>
+        <p class="muted">{{ net_calories_today }} / {{ calories_target }} kcal ({{ net_target_percent|round|int }}%)</p>
+        <p class="muted">{{ t("Consumed") }}: {{ calories_eaten }} | {{ t("Burned") }}: {{ calories_burned_today }}</p>
+    </article>
+
+    <article class="panel stat-card">
         <h2>{{ t("Current Weight / موجودہ وزن") }}</h2>
         {% if latest_weight is not none %}
         <p class="value-lg">{{ latest_weight }} <span>kg</span></p>

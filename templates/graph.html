@@ -2,7 +2,24 @@
 
 {% block content %}
 <section class="panel">
-    <h1>{{ t("Progress Graph / پیش رفت گراف") }}</h1>
+    <h1>{{ t("Goals & Progress / اہداف اور پیش رفت") }}</h1>
+    <form method="post" style="margin-bottom: 1rem;">
+        <label for="daily_calories_target">{{ t("Daily Calories Target / روزانہ کیلوریز ہدف") }}</label>
+        <input
+            id="daily_calories_target"
+            name="daily_calories_target"
+            type="number"
+            min="500"
+            max="10000"
+            step="1"
+            placeholder="2000"
+            value="{{ current_target }}">
+        <p class="muted" style="margin-top: 0.4rem;">{{ t("Leave empty to use default 2000 / خالی چھوڑیں تو 2000 بطور ڈیفالٹ رہے گا") }}</p>
+        <button type="submit">{{ t("Save Target / ہدف محفوظ کریں") }}</button>
+        {% if target_saved %}
+        <p class="muted" style="margin-top: 0.5rem;">{{ t("Target saved / ہدف محفوظ ہوگیا") }}</p>
+        {% endif %}
+    </form>
     {% if graph_url %}
     <div class="image-card">
         <img src="{{ graph_url }}" alt="Progress graph / پیش رفت گراف">
