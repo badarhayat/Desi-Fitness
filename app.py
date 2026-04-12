@@ -1328,6 +1328,7 @@ def fasting():
     
     duration_options = [16, 18, 20, 48]
 
+    completed_fast = None
     if request.method == "POST":
         action = request.form.get("action")
         if action == "start":
@@ -1340,25 +1341,50 @@ def fasting():
             if selected_hours not in duration_options:
                 selected_hours = 16
 
-            fitness_analysis.start_fast(selected_hours)
+            # Optional earlier start time
+            start_time_str = request.form.get("start_time", "").strip()
+            custom_start = None
+            if start_time_str:
+                try:
+                    custom_start = datetime.strptime(start_time_str, "%Y-%m-%dT%H:%M")
+                except ValueError:
+                    custom_start = None
+
+            fitness_analysis.start_fast(selected_hours, custom_start)
         elif action == "stop":
-            fitness_analysis.end_fast()
+            completed_fast = fitness_analysis.end_fast()
 
     history = fitness_analysis.fasting_data["history"]
-    last_duration = history[-1]["duration_hours"] if history else None
+
+    # Last completed fast H:M:S breakdown
+    last_entry = history[-1] if history else None
+    last_duration_parts = None
+    if last_entry:
+        secs = int(last_entry.get("duration_seconds") or last_entry["duration_hours"] * 3600)
+        last_duration_parts = {"h": secs // 3600, "m": (secs % 3600) // 60, "s": secs % 60}
+
+    # Completed fast H:M:S breakdown
+    completed_parts = None
+    if completed_fast:
+        secs = completed_fast.get("duration_seconds", 0)
+        completed_parts = {"h": secs // 3600, "m": (secs % 3600) // 60, "s": secs % 60}
+
     progress = fitness_analysis.get_fasting_progress()
     current_target_hours = fitness_analysis.fasting_data["current_fast"].get("target_hours") or 16
+    now_iso = datetime.now().strftime("%Y-%m-%dT%H:%M")
 
     return render_template(
         "fasting.html",
         fasting_data=fitness_analysis.fasting_data,
         fasting_duration=fitness_analysis.get_fasting_duration(),
-        last_duration=last_duration,
+        last_duration_parts=last_duration_parts,
         duration_options=duration_options,
         current_target_hours=current_target_hours,
         remaining_seconds=progress["remaining_seconds"],
         target_seconds=progress["target_seconds"],
         completion_percent=progress["completion_percent"],
+        completed_parts=completed_parts,
+        now_iso=now_iso,
     )
 
 

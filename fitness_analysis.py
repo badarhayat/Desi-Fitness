@@ -139,28 +139,30 @@ def calculate_exercise_calories(exercise_type: str, reps: int) -> float:
     return round(reps * rate, 2)
 
 
-def start_fast(target_hours: int = 16) -> None:
+def start_fast(target_hours: int = 16, start_time: datetime = None) -> None:
     if fasting_data["current_fast"]["is_active"]:
         print("Fast already active")
         return
 
     target_hours = max(1, int(target_hours))
 
-    fasting_data["current_fast"]["start_time"] = datetime.now()
+    effective_start = start_time if (start_time and start_time < datetime.now()) else datetime.now()
+    fasting_data["current_fast"]["start_time"] = effective_start
     fasting_data["current_fast"]["is_active"] = True
     fasting_data["current_fast"]["target_hours"] = target_hours
     fasting_data["current_fast"]["target_seconds"] = target_hours * 3600
     print("Fasting started")
 
 
-def end_fast() -> None:
+def end_fast() -> dict | None:
     if not fasting_data["current_fast"]["is_active"]:
         print("No active fast")
-        return
+        return None
 
     start = fasting_data["current_fast"]["start_time"]
     end = datetime.now()
-    duration = (end - start).total_seconds() / 3600
+    total_seconds = int((end - start).total_seconds())
+    duration = total_seconds / 3600
     target_hours = fasting_data["current_fast"].get("target_hours")
     target_seconds = fasting_data["current_fast"].get("target_seconds")
     if not target_seconds and target_hours:
@@ -168,23 +170,24 @@ def end_fast() -> None:
 
     completion_percent = None
     if target_seconds:
-        completion_percent = round(min(100.0, (duration * 3600 / target_seconds) * 100), 2)
+        completion_percent = round(min(100.0, (total_seconds / target_seconds) * 100), 2)
 
-    fasting_data["history"].append(
-        {
-            "start": start.isoformat(),
-            "end": end.isoformat(),
-            "duration_hours": round(duration, 2),
-            "target_hours": target_hours,
-            "completion_percent": completion_percent,
-        }
-    )
+    entry = {
+        "start": start.isoformat(),
+        "end": end.isoformat(),
+        "duration_seconds": total_seconds,
+        "duration_hours": round(duration, 2),
+        "target_hours": target_hours,
+        "completion_percent": completion_percent,
+    }
+    fasting_data["history"].append(entry)
 
     fasting_data["current_fast"]["start_time"] = None
     fasting_data["current_fast"]["is_active"] = False
     fasting_data["current_fast"]["target_hours"] = None
     fasting_data["current_fast"]["target_seconds"] = None
     print(f"Fast ended. Duration: {duration:.2f} hours")
+    return entry
 
 
 def get_fasting_duration() -> float:

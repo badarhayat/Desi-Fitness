@@ -8,16 +8,31 @@
         <select id="duration_hours" name="duration_hours">
             {% for hours in duration_options %}
             <option value="{{ hours }}" {% if hours == current_target_hours %}selected{% endif %}>
-                {% if hours == 48 %}2 din (48 ghantay) / 2 دن{% else %}{{ hours }} ghantay / گھنٹے{% endif %}
+                {% if hours == 48 %}2 din (48 ghantay) / 2 دن (48 گھنٹے){% else %}{{ hours }} ghantay / {{ hours }} گھنٹے{% endif %}
             </option>
             {% endfor %}
         </select>
+        <label for="start_time" style="margin-top:0.75rem;">
+            Fast start time (leave blank for now / خالی چھوڑیں اگر ابھی شروع ہے):
+        </label>
+        <input type="datetime-local" id="start_time" name="start_time" value="{{ now_iso }}" max="{{ now_iso }}">
+        <p class="muted" style="font-size:0.8rem;">Agar aapne fast pehle shuru kiya tha to waqt change karein / اگر روزہ پہلے شروع کیا تھا تو وقت تبدیل کریں</p>
         <div class="split-actions">
             <button type="submit" name="action" value="start">{{ t("Fast Start / روزہ شروع کریں") }}</button>
             <button class="secondary-btn" type="submit" name="action" value="stop">{{ t("Fast End / روزہ ختم کریں") }}</button>
         </div>
     </form>
 </section>
+
+{% if completed_parts %}
+<section class="panel" style="border-left: 4px solid #4caf50;">
+    <h2 style="color:#4caf50;">Mashallah! Fast Mukammal / ماشاء اللہ! روزہ مکمل ہوا 🎉</h2>
+    <p style="font-size:1.1rem;">
+        Aapne roza rakha: <strong>{{ completed_parts.h }} ghante {{ completed_parts.m }} minute {{ completed_parts.s }} second</strong><br>
+        آپ نے روزہ رکھا: <strong>{{ completed_parts.h }} گھنٹے {{ completed_parts.m }} منٹ {{ completed_parts.s }} سیکنڈ</strong>
+    </p>
+</section>
+{% endif %}
 
 <section class="panel">
     <h2>Countdown / الٹی گنتی</h2>
@@ -37,7 +52,10 @@
 
 <section class="panel">
     <h2>Last Fasting Duration / آخری روزے کا دورانیہ</h2>
-    <p>{% if last_duration is not none %}{{ last_duration }} ghantay / گھنٹے{% else %}Koi pichla fast nahin / کوئی پچھلا روزہ نہیں{% endif %}</p>
+    <p>{% if last_duration_parts %}
+        {{ last_duration_parts.h }} ghante {{ last_duration_parts.m }} minute {{ last_duration_parts.s }} second /
+        {{ last_duration_parts.h }} گھنٹے {{ last_duration_parts.m }} منٹ {{ last_duration_parts.s }} سیکنڈ
+    {% else %}Koi pichla fast nahin / کوئی پچھلا روزہ نہیں{% endif %}</p>
 </section>
 
 <section class="panel">
@@ -51,7 +69,12 @@
     <ul>
         {% for item in fasting_data.history %}
         <li>
-            {{ item.start }} se {{ item.end }} tak / سے تک: {{ item.duration_hours }} ghantay / گھنٹے
+            {% set secs = (item.duration_seconds if item.duration_seconds is defined else (item.duration_hours * 3600)) | int %}
+            {% set ih = secs // 3600 %}
+            {% set im = (secs % 3600) // 60 %}
+            {% set is_ = secs % 60 %}
+            {{ item.start[:10] }}: <strong>{{ ih }}h {{ im }}m {{ is_ }}s</strong>
+            / <strong>{{ ih }} گھنٹے {{ im }} منٹ {{ is_ }} سیکنڈ</strong>
             {% if item.target_hours %}
             (target {{ item.target_hours }}h{% if item.completion_percent is not none %}, {{ item.completion_percent }}% complete / مکمل{% endif %})
             {% endif %}
