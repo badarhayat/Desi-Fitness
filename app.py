@@ -603,7 +603,9 @@ def home():
     calories_percent_raw = round((calories_eaten / calories_target) * 100, 2) if calories_target else 0.0
     calories_percent = min(100.0, calories_percent_raw)
     calories_over_percent = round(max(0.0, calories_percent_raw - 100.0), 2)
-    net_target_percent = round((net_calories_today / calories_target) * 100, 2) if calories_target else 0.0
+    net_percent_raw = round((net_calories_today / calories_target) * 100, 2) if calories_target else 0.0
+    net_percent = min(100.0, max(0.0, net_percent_raw))
+    net_over_percent = round(max(0.0, net_percent_raw - 100.0), 2)
     net_delta = round(net_calories_today - calories_target, 2)
     net_status = "over" if net_delta > 0 else "under" if net_delta < 0 else "on_target"
     walk_steps_needed = 0
@@ -667,7 +669,9 @@ def home():
         calories_percent=calories_percent,
         calories_percent_raw=calories_percent_raw,
         calories_over_percent=calories_over_percent,
-        net_target_percent=net_target_percent,
+        net_percent=net_percent,
+        net_percent_raw=net_percent_raw,
+        net_over_percent=net_over_percent,
         net_vs_target_pie_url=net_vs_target_pie_url,
         net_delta=net_delta,
         net_status=net_status,
