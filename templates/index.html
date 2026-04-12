@@ -32,12 +32,20 @@
     </article>
 
     <article class="panel stat-card">
-        <h2>{{ t("Net vs Target / خالص بمقابلہ ہدف") }}</h2>
-        <div class="mini-pie-wrap">
-            <img class="mini-pie" src="{{ net_vs_target_pie_url }}" alt="Net calories vs target / خالص کیلوریز بمقابلہ ہدف">
-        </div>
-        <p class="muted">{{ net_calories_today }} / {{ calories_target }} kcal ({{ net_target_percent|round|int }}%)</p>
-        <p class="muted">{{ t("Consumed") }}: {{ calories_eaten }} | {{ t("Burned") }}: {{ calories_burned_today }}</p>
+        <h2>{{ t("Net Calories / خالص کیلوریز") }}</h2>
+        <p class="muted">{{ t("Consumed") }}: {{ calories_eaten }} kcal</p>
+        <p class="muted">{{ t("Burned") }}: {{ calories_burned_today }} kcal</p>
+        <p class="muted">{{ t("Net") }}: {{ net_calories_today }} kcal</p>
+        <p class="muted">{{ t("Target") }}: {{ calories_target }} kcal</p>
+
+        {% if net_status == 'over' %}
+        <p class="muted" style="color:#f97316;">{{ t("Over target by / ہدف سے زیادہ") }} {{ net_delta|abs|round|int }} kcal ({{ (net_target_percent - 100)|round|int }}%)</p>
+        <p class="muted">{{ t("Suggested walk / تجویز کردہ واک") }}: {{ walk_minutes_needed }} {{ t("minutes") }} (~{{ walk_steps_needed }} {{ t("steps") }})</p>
+        {% elif net_status == 'under' %}
+        <p class="muted" style="color:#22c55e;">{{ t("Under target by / ہدف سے کم") }} {{ net_delta|abs|round|int }} kcal</p>
+        {% else %}
+        <p class="muted" style="color:#22c55e;">{{ t("On target / ہدف کے مطابق") }}</p>
+        {% endif %}
     </article>
 
     <article class="panel stat-card">

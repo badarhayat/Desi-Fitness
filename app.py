@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import math
 from pathlib import Path
 
 import matplotlib
@@ -592,7 +593,6 @@ def home():
         return login_check
     
     user_data = _get_current_user_data()
-    username = _get_current_username() or "user"
     today = _today()
     profile = user_data.get("profile", {})
     calories_target = profile.get("daily_calories_target") or DAILY_TARGETS["calories"]
@@ -602,15 +602,15 @@ def home():
     calories_percent_raw = round((calories_eaten / calories_target) * 100, 2) if calories_target else 0.0
     calories_percent = min(100.0, calories_percent_raw)
     calories_over_percent = round(max(0.0, calories_percent_raw - 100.0), 2)
-    net_target_percent = round(
-        min(100.0, max(0.0, (net_calories_today / calories_target) * 100)), 2
-    ) if calories_target else 0.0
-    net_vs_target_pie_url = _save_net_vs_target_pie(
-        username,
-        max(0.0, net_calories_today),
-        float(calories_target),
-        "home_net_vs_target_pie",
-    )
+    net_target_percent = round((net_calories_today / calories_target) * 100, 2) if calories_target else 0.0
+    net_delta = round(net_calories_today - calories_target, 2)
+    net_status = "over" if net_delta > 0 else "under" if net_delta < 0 else "on_target"
+    walk_steps_needed = 0
+    walk_minutes_needed = 0
+    if net_delta > 0:
+        # Approximation based on 0.04 kcal per step and ~100 steps/min normal walk.
+        walk_steps_needed = math.ceil(net_delta / 0.04)
+        walk_minutes_needed = max(1, math.ceil(walk_steps_needed / 100))
 
     latest_weight = None
     if user_data["weight_log"]:
@@ -661,7 +661,10 @@ def home():
         calories_percent_raw=calories_percent_raw,
         calories_over_percent=calories_over_percent,
         net_target_percent=net_target_percent,
-        net_vs_target_pie_url=net_vs_target_pie_url,
+        net_delta=net_delta,
+        net_status=net_status,
+        walk_steps_needed=walk_steps_needed,
+        walk_minutes_needed=walk_minutes_needed,
         latest_weight=latest_weight,
         profile=profile,
         bmi=bmi,
