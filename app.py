@@ -1371,6 +1371,23 @@ def fasting():
             fitness_analysis.start_fast(selected_hours, custom_start)
         elif action == "stop":
             completed_fast = fitness_analysis.end_fast(now=_user_now())
+        elif action == "delete_history":
+            try:
+                fitness_analysis.delete_fast_entry(int(request.form.get("history_index", "")))
+            except (ValueError, TypeError):
+                pass
+        elif action == "edit_history":
+            try:
+                idx = int(request.form.get("history_index", ""))
+                fitness_analysis.edit_fast_entry(
+                    idx,
+                    request.form.get("edit_start", "").strip(),
+                    request.form.get("edit_end", "").strip(),
+                    request.form.get("edit_target_hours", "").strip() or None,
+                )
+            except (ValueError, TypeError):
+                pass
+        return redirect(url_for("fasting"))
 
     history = fitness_analysis.fasting_data["history"]
 
@@ -1381,7 +1398,7 @@ def fasting():
         secs = int(last_entry.get("duration_seconds") or last_entry["duration_hours"] * 3600)
         last_duration_parts = {"h": secs // 3600, "m": (secs % 3600) // 60, "s": secs % 60}
 
-    # Completed fast H:M:S breakdown
+    # Completed fast H:M:S breakdown (only shown right after stop, before redirect)
     completed_parts = None
     if completed_fast:
         secs = completed_fast.get("duration_seconds", 0)
@@ -1391,6 +1408,22 @@ def fasting():
     progress = fitness_analysis.get_fasting_progress(now=user_now)
     current_target_hours = fitness_analysis.fasting_data["current_fast"].get("target_hours") or 16
     now_iso = user_now.strftime("%Y-%m-%dT%H:%M")
+
+    # Expected fast end time
+    fast_end_str = None
+    cf = fitness_analysis.fasting_data["current_fast"]
+    if cf.get("is_active") and cf.get("start_time") and cf.get("target_hours"):
+        end_dt = cf["start_time"] + timedelta(hours=cf["target_hours"])
+        fast_end_str = end_dt.strftime("%d %b %Y, %I:%M %p")
+
+    # History index to show edit form for
+    editing_index = None
+    try:
+        ei = request.args.get("edit", "")
+        if ei != "":
+            editing_index = int(ei)
+    except (ValueError, TypeError):
+        pass
 
     return render_template(
         "fasting.html",
@@ -1404,6 +1437,8 @@ def fasting():
         completion_percent=progress["completion_percent"],
         completed_parts=completed_parts,
         now_iso=now_iso,
+        fast_end_str=fast_end_str,
+        editing_index=editing_index,
     )
 
 

@@ -46,6 +46,9 @@
 <section class="panel">
     <h2>Countdown / الٹی گنتی</h2>
     <p class="timer-text" id="countdown">00:00:00</p>
+    {% if fast_end_str %}
+    <p class="muted">Fast khatam hoga / روزہ ختم ہوگا: <strong>{{ fast_end_str }}</strong></p>
+    {% endif %}
     <p class="muted">Time format / وقت کی ترتیب: hours : minutes : seconds</p>
 </section>
 
@@ -75,23 +78,71 @@
 <section class="panel">
     <h2>Fasting History / روزہ ہسٹری</h2>
     <div class="list-card">
-    <ul>
+    {% if fasting_data.history %}
+    <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+        <thead>
+            <tr style="text-align:left; border-bottom:1px solid var(--border,#ddd);">
+                <th style="padding:6px;">Date / تاریخ</th>
+                <th style="padding:6px;">Duration / دورانیہ</th>
+                <th style="padding:6px;">Target / ہدف</th>
+                <th style="padding:6px;">% Done</th>
+                <th style="padding:6px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
         {% for item in fasting_data.history %}
-        <li>
+            {% set idx = loop.index0 %}
             {% set secs = (item.duration_seconds if item.duration_seconds is defined else (item.duration_hours * 3600)) | int %}
             {% set ih = secs // 3600 %}
             {% set im = (secs % 3600) // 60 %}
             {% set is_ = secs % 60 %}
-            {{ item.start[:10] }}: <strong>{{ ih }}h {{ im }}m {{ is_ }}s</strong>
-            / <strong>{{ ih }} گھنٹے {{ im }} منٹ {{ is_ }} سیکنڈ</strong>
-            {% if item.target_hours %}
-            (target {{ item.target_hours }}h{% if item.completion_percent is not none %}, {{ item.completion_percent }}% complete / مکمل{% endif %})
+            {% if editing_index == idx %}
+            <tr style="background:var(--panel-hover, #f9f9f9);">
+                <td colspan="5" style="padding:8px;">
+                    <form method="post" style="display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end;">
+                        <input type="hidden" name="history_index" value="{{ idx }}">
+                        <div>
+                            <label style="font-size:0.8rem;">Start / شروع</label><br>
+                            <input type="datetime-local" name="edit_start" value="{{ item.start[:16] }}" required>
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem;">End / ختم</label><br>
+                            <input type="datetime-local" name="edit_end" value="{{ item.end[:16] }}" required>
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem;">Target hours / ہدف گھنٹے</label><br>
+                            <input type="number" name="edit_target_hours" min="1" max="168" value="{{ item.target_hours or '' }}" placeholder="optional">
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            <button type="submit" name="action" value="edit_history">Save / محفوظ</button>
+                            <a href="{{ url_for('fasting') }}" class="secondary-btn" style="padding:6px 12px; text-decoration:none;">Cancel / منسوخ</a>
+                        </div>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr style="border-bottom:1px solid var(--border,#eee);">
+                <td style="padding:6px;">{{ item.start[:10] }}</td>
+                <td style="padding:6px;"><strong>{{ ih }}h {{ im }}m {{ is_ }}s</strong></td>
+                <td style="padding:6px;">{{ item.target_hours ~ 'h' if item.target_hours else '—' }}</td>
+                <td style="padding:6px;">{{ item.completion_percent ~ '%' if item.completion_percent is not none else '—' }}</td>
+                <td style="padding:6px; white-space:nowrap;">
+                    <a href="{{ url_for('fasting') }}?edit={{ idx }}" style="font-size:0.85rem; margin-right:8px;">✏️ Edit</a>
+                    <form method="post" style="display:inline;">
+                        <input type="hidden" name="history_index" value="{{ idx }}">
+                        <button type="submit" name="action" value="delete_history"
+                                onclick="return confirm('Delete this fast entry? / یہ روزہ ریکارڈ مٹائیں؟')"
+                                style="font-size:0.85rem; background:none; border:none; color:#e53935; cursor:pointer; padding:0;">🗑️ Delete</button>
+                    </form>
+                </td>
+            </tr>
             {% endif %}
-        </li>
-        {% else %}
-        <li class="muted">Abhi fasting history nahin / ابھی روزہ ہسٹری نہیں</li>
         {% endfor %}
-    </ul>
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted">Abhi fasting history nahin / ابھی روزہ ہسٹری نہیں</p>
+    {% endif %}
     </div>
 </section>
 

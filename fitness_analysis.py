@@ -235,6 +235,38 @@ def get_fasting_progress(now: datetime = None) -> dict[str, float | int]:
     }
 
 
+def delete_fast_entry(index: int) -> bool:
+    try:
+        fasting_data["history"].pop(index)
+        return True
+    except IndexError:
+        return False
+
+
+def edit_fast_entry(index: int, start_iso: str, end_iso: str, target_hours) -> bool:
+    try:
+        entry = fasting_data["history"][index]
+        start = datetime.fromisoformat(start_iso)
+        end = datetime.fromisoformat(end_iso)
+        if end <= start:
+            return False
+        duration_seconds = int((end - start).total_seconds())
+        duration_hours = round(duration_seconds / 3600, 2)
+        th = int(target_hours) if target_hours else None
+        completion_percent = None
+        if th:
+            completion_percent = round(min(100.0, (duration_seconds / (th * 3600)) * 100), 2)
+        entry["start"] = start.isoformat()
+        entry["end"] = end.isoformat()
+        entry["duration_seconds"] = duration_seconds
+        entry["duration_hours"] = duration_hours
+        entry["target_hours"] = th
+        entry["completion_percent"] = completion_percent
+        return True
+    except (IndexError, ValueError, TypeError):
+        return False
+
+
 def _merge_progress_logs() -> pd.DataFrame:
     df_w = pd.DataFrame(user_data["weight_log"])
     df_s = pd.DataFrame(user_data["steps_log"])
