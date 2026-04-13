@@ -113,25 +113,13 @@ def _get_user_tz_offset() -> int:
         return 0
 
 
-def _get_user_local_date() -> str | None:
-    """Return user's local date string (YYYY-MM-DD) from browser cookie when available."""
-    local_date = (request.cookies.get("local_date") or "").strip()
-    try:
-        if local_date:
-            datetime.strptime(local_date, "%Y-%m-%d")
-            return local_date
-    except ValueError:
-        return None
-    return None
-
-
 def _user_now() -> datetime:
     """Current datetime adjusted to user's local timezone (naive)."""
     return datetime.utcnow() + timedelta(minutes=_get_user_tz_offset())
 
 
 def _today() -> str:
-    return _get_user_local_date() or _user_now().date().isoformat()
+    return _user_now().date().isoformat()
 
 
 def _get_current_language() -> str:
