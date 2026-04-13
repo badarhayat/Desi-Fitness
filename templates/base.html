@@ -51,7 +51,13 @@
         // Set user timezone offset cookie (minutes east of UTC)
         (function () {
             var offset = -(new Date().getTimezoneOffset());
+            var d = new Date();
+            var yyyy = d.getFullYear();
+            var mm = String(d.getMonth() + 1).padStart(2, '0');
+            var dd = String(d.getDate()).padStart(2, '0');
+            var localDate = yyyy + '-' + mm + '-' + dd;
             document.cookie = 'tz_offset=' + offset + '; path=/; SameSite=Lax';
+            document.cookie = 'local_date=' + localDate + '; path=/; SameSite=Lax';
         })();
     </script>
     <script>
