@@ -499,11 +499,11 @@ def _build_graph_rows(user_data: dict) -> list[dict]:
 
 def _calculate_daily_net_calories(user_data: dict, date: str) -> tuple[float, float, float]:
     """Return (net, consumed, burned) calories for a given date."""
-    consumed_entry = next(
-        (entry for entry in user_data.get("nutrition_log", []) if entry.get("date") == date),
-        None,
+    consumed = sum(
+        float(entry.get("calories", 0.0))
+        for entry in user_data.get("meal_log", [])
+        if entry.get("date") == date
     )
-    consumed = float(consumed_entry.get("calories", 0.0)) if consumed_entry else 0.0
     burned_steps = sum(
         float(entry.get("calories_lost", 0.0))
         for entry in user_data.get("steps_log", [])
