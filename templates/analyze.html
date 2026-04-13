@@ -134,6 +134,7 @@
 
 <script>
     (function () {
+        const mealDateInput = document.getElementById("meal_date");
         const dishSelect = document.getElementById("dish_name");
         const currentPreviewInput = document.getElementById("current_preview_dish_name");
         const previewPanel = document.getElementById("preview-panel");
@@ -142,6 +143,17 @@
 
         if (!dishSelect || !currentPreviewInput) {
             return;
+        }
+
+        // Keep meal date aligned with browser local date when page is opened without explicit date param.
+        const hasDateInQuery = new URLSearchParams(window.location.search).has("meal_date");
+        const isEditMode = {{ 'true' if editing_meal else 'false' }};
+        if (mealDateInput && !hasDateInQuery && !isEditMode) {
+            const d = new Date();
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, "0");
+            const dd = String(d.getDate()).padStart(2, "0");
+            mealDateInput.value = `${yyyy}-${mm}-${dd}`;
         }
 
         function updateRotiFields() {

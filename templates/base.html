@@ -50,6 +50,7 @@
     <script>
         // Set user timezone offset cookie (minutes east of UTC)
         (function () {
+            var hadTzCookie = document.cookie.indexOf('tz_offset=') !== -1;
             var offset = -(new Date().getTimezoneOffset());
             var d = new Date();
             var yyyy = d.getFullYear();
@@ -58,6 +59,12 @@
             var localDate = yyyy + '-' + mm + '-' + dd;
             document.cookie = 'tz_offset=' + offset + '; path=/; SameSite=Lax';
             document.cookie = 'local_date=' + localDate + '; path=/; SameSite=Lax';
+
+            // If timezone cookie was missing, refresh once so server-side date math uses user timezone.
+            if (!hadTzCookie && !sessionStorage.getItem('tz_synced_once')) {
+                sessionStorage.setItem('tz_synced_once', '1');
+                window.location.reload();
+            }
         })();
     </script>
     <script>
