@@ -23,7 +23,7 @@
 
         <div id="roti-fields" {% if not (selected_dish and selected_dish.supports_rotis) %}hidden{% endif %}>
         <label for="rotis">Khayi hui rotian (1 roti = 110g atta) / کھائی ہوئی روٹیاں</label>
-        <input id="rotis" type="number" min="0" step="0.25" name="rotis" value="{{ selected_rotis }}">
+        <input id="rotis" type="number" min="0" step="any" name="rotis" value="{{ selected_rotis }}">
         <p class="muted" id="roti-help-text">
             Har roti mein izafa: {{ roti_nutrition_per_piece.calories }} kcal,
             Protein {{ roti_nutrition_per_piece.protein }},
@@ -33,7 +33,7 @@
         </div>
 
         <label for="portion">Portion amount (e.g. 0.5, 0.75, 1) / پورشن مقدار</label>
-        <input id="portion" type="number" min="0.01" step="0.25" name="portion" value="{{ selected_portion }}">
+        <input id="portion" type="number" min="0.01" step="any" name="portion" value="{{ selected_portion }}">
         <p class="muted">Example: 0.5 = half plate, 0.75 = three-fourth, 1 = full plate. Roti impact will scale with this value.</p>
 
         {% if editing_meal %}
