@@ -23,7 +23,7 @@
 
         <div id="roti-fields" {% if not (selected_dish and selected_dish.supports_rotis) %}hidden{% endif %}>
         <label for="rotis">Khayi hui rotian (1 roti = 110g atta) / کھائی ہوئی روٹیاں</label>
-        <input id="rotis" type="number" min="0" step="1" name="rotis" value="{{ selected_rotis }}">
+        <input id="rotis" type="number" min="0" step="0.25" name="rotis" value="{{ selected_rotis }}">
         <p class="muted" id="roti-help-text">
             Har roti mein izafa: {{ roti_nutrition_per_piece.calories }} kcal,
             Protein {{ roti_nutrition_per_piece.protein }},
@@ -31,6 +31,10 @@
             Fat {{ roti_nutrition_per_piece.fat }}
         </p>
         </div>
+
+        <label for="portion">Portion amount (e.g. 0.5, 0.75, 1) / پورشن مقدار</label>
+        <input id="portion" type="number" min="0.01" step="0.25" name="portion" value="{{ selected_portion }}">
+        <p class="muted">Example: 0.5 = half plate, 0.75 = three-fourth, 1 = full plate. Roti impact will scale with this value.</p>
 
         {% if editing_meal %}
         <input type="hidden" name="meal_id" value="{{ editing_meal.id }}">
@@ -265,6 +269,7 @@
             <tr>
                 <th>Date</th>
                 <th>Dish</th>
+                <th>Portion</th>
                 <th>Rotis</th>
                 <th>Calories</th>
                 <th>Protein</th>
@@ -278,6 +283,7 @@
             <tr>
                 <td>{{ meal.date }}</td>
                 <td>{{ dish_label(meal.dish_name) }}</td>
+                <td>{{ meal.portion or 1 }}</td>
                 <td>{{ meal.rotis or 0 }}</td>
                 <td>{{ meal.calories }}</td>
                 <td>{{ meal.protein }}</td>
@@ -297,7 +303,7 @@
                 </td>
             </tr>
             {% else %}
-            <tr><td colspan="8" class="muted">No meals logged yet.</td></tr>
+            <tr><td colspan="9" class="muted">No meals logged yet.</td></tr>
             {% endfor %}
         </tbody>
     </table>

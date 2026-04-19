@@ -373,7 +373,8 @@ def _roti_nutrition(
 def _meal_payload(
     dish: dict,
     date: str,
-    rotis: int = 0,
+    rotis: float = 0.0,
+    portion: float = 1.0,
     entry_id: int | None = None,
     nutrition_db: dict[str, dict[str, float]] | None = None,
 ) -> dict:
@@ -381,21 +382,31 @@ def _meal_payload(
     atta_nutrition = (nutrition_db or fitness_analysis.DEFAULT_NUTRITION_DB).get(
         "atta", fitness_analysis.DEFAULT_NUTRITION_DB.get("atta", {})
     )
-    grams_factor = ((rotis if dish.get("supports_rotis") else 0) * ATTA_GRAMS_PER_ROTI) / 100
+    portion = max(0.01, float(portion))
+    effective_rotis = (rotis if dish.get("supports_rotis") else 0.0) * portion
+    grams_factor = (effective_rotis * ATTA_GRAMS_PER_ROTI) / 100
     roti_nutrition = {
         "calories": round(atta_nutrition.get("calories", 0) * grams_factor, 2),
         "protein": round(atta_nutrition.get("protein", 0) * grams_factor, 2),
         "carbs": round(atta_nutrition.get("carbs", 0) * grams_factor, 2),
         "fat": round(atta_nutrition.get("fat", 0) * grams_factor, 2),
     }
+
+    dish_calories = float(nutrition.get("calories", 0)) * portion
+    dish_protein = float(nutrition.get("protein", 0)) * portion
+    dish_carbs = float(nutrition.get("carbs", 0)) * portion
+    dish_fat = float(nutrition.get("fat", 0)) * portion
+
     payload = {
         "date": date,
         "dish_name": dish["dish_name"],
-        "rotis": rotis if dish.get("supports_rotis") else 0,
-        "calories": round(nutrition.get("calories", 0) + roti_nutrition["calories"], 2),
-        "protein": round(nutrition.get("protein", 0) + roti_nutrition["protein"], 2),
-        "carbs": round(nutrition.get("carbs", 0) + roti_nutrition["carbs"], 2),
-        "fat": round(nutrition.get("fat", 0) + roti_nutrition["fat"], 2),
+        "portion": round(portion, 2),
+        "rotis_input": round(rotis, 2) if dish.get("supports_rotis") else 0,
+        "rotis": round(effective_rotis, 2) if dish.get("supports_rotis") else 0,
+        "calories": round(dish_calories + roti_nutrition["calories"], 2),
+        "protein": round(dish_protein + roti_nutrition["protein"], 2),
+        "carbs": round(dish_carbs + roti_nutrition["carbs"], 2),
+        "fat": round(dish_fat + roti_nutrition["fat"], 2),
     }
     if entry_id is not None:
         payload["id"] = entry_id
@@ -1057,6 +1068,7 @@ def analyze():
     selected_dish = next((dish for dish in dishes if dish["dish_name"] == selected_dish_name), None)
     preview_dish = None
     selected_rotis = form_source.get("rotis", "0").strip() or "0"
+    selected_portion = form_source.get("portion", "1").strip() or "1"
     editing_meal = None
     error = None
     nutrition_item_saved = request.args.get("nutrition_item_saved", "").strip()
@@ -1079,7 +1091,8 @@ def analyze():
                 if editing_meal:
                     selected_dish_name = editing_meal["dish_name"]
                     meal_date = editing_meal["date"]
-                    selected_rotis = str(editing_meal.get("rotis", 0))
+                    selected_rotis = str(editing_meal.get("rotis_input", editing_meal.get("rotis", 0)))
+                    selected_portion = str(editing_meal.get("portion", 1))
                     selected_dish = next(
                         (dish for dish in dishes if dish["dish_name"] == selected_dish_name), None
                     )
@@ -1094,12 +1107,16 @@ def analyze():
             if action in {"add", "save"} and selected_dish is not None:
                 meal_id = request.form.get("meal_id", "").strip()
                 rotis_raw = request.form.get("rotis", "0").strip() or "0"
-                rotis = max(0, int(rotis_raw))
+                portion_raw = request.form.get("portion", "1").strip() or "1"
+                rotis = max(0.0, float(rotis_raw))
+                portion = max(0.01, float(portion_raw))
                 selected_rotis = str(rotis)
+                selected_portion = str(portion)
                 payload = _meal_payload(
                     selected_dish,
                     meal_date,
                     rotis=rotis,
+                    portion=portion,
                     entry_id=int(meal_id) if meal_id else None,
                     nutrition_db=nutrition_db,
                 )
@@ -1140,6 +1157,7 @@ def analyze():
         meal_date=meal_date,
         logged_for_date=logged_for_date,
         logged_dishes_display=logged_dishes_display,
+        selected_portion=selected_portion,
         meal_log=sorted(
             [item for item in user_data["meal_log"] if item.get("date") == meal_date],
             key=lambda item: (item["date"], item["id"]),
