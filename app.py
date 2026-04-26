@@ -516,6 +516,97 @@ def _build_graph_rows(user_data: dict) -> list[dict]:
     return rows
 
 
+def _parse_iso_datetime(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except (ValueError, TypeError):
+        return None
+
+
+def _summarize_last_30_days(user_data: dict) -> dict[str, str]:
+    today_dt = _user_now()
+    cutoff = today_dt - timedelta(days=30)
+
+    def _windowed_points(log: list[dict], value_key: str) -> list[tuple[datetime, float]]:
+        points = []
+        for entry in log:
+            entry_date = _parse_iso_datetime(f"{entry.get('date', '')}T00:00")
+            if entry_date is None or entry_date < cutoff:
+                continue
+            value = entry.get(value_key)
+            if value is None:
+                continue
+            try:
+                points.append((entry_date, float(value)))
+            except (ValueError, TypeError):
+                continue
+        points.sort(key=lambda item: item[0])
+        return points
+
+    weight_points = _windowed_points(user_data.get("weight_log", []), "weight")
+    if len(weight_points) >= 2:
+        weight_delta = round(weight_points[-1][1] - weight_points[0][1], 2)
+        if weight_delta < 0:
+            weight_summary = f"Last 30 days: {abs(weight_delta)} kg weight lost"
+        elif weight_delta > 0:
+            weight_summary = f"Last 30 days: {weight_delta} kg weight gained"
+        else:
+            weight_summary = "Last 30 days: no weight change"
+    else:
+        weight_summary = "Last 30 days: not enough weight data"
+
+    steps_points = _windowed_points(user_data.get("steps_log", []), "steps")
+    if len(steps_points) >= 2:
+        steps_delta = int(round(steps_points[-1][1] - steps_points[0][1]))
+        if steps_delta < 0:
+            steps_summary = f"Walking change: {abs(steps_delta)} fewer steps/day"
+        elif steps_delta > 0:
+            steps_summary = f"Walking change: {steps_delta} more steps/day"
+        else:
+            steps_summary = "Walking change: no difference"
+    else:
+        steps_summary = "Walking change: not enough step data"
+
+    fasting_state = user_data.setdefault("fasting_data", fitness_analysis._default_fasting_data())
+    recent_fasts = []
+    for item in fasting_state.get("history", []):
+        end_dt = _parse_iso_datetime(item.get("end"))
+        if end_dt is None or end_dt < cutoff:
+            continue
+        duration_seconds = item.get("duration_seconds")
+        if duration_seconds is None:
+            duration_seconds = int(float(item.get("duration_hours", 0)) * 3600)
+        try:
+            duration_seconds = int(duration_seconds)
+        except (ValueError, TypeError):
+            duration_seconds = 0
+        completion = item.get("completion_percent")
+        try:
+            completion = float(completion) if completion is not None else None
+        except (ValueError, TypeError):
+            completion = None
+        recent_fasts.append((duration_seconds, completion))
+
+    if recent_fasts:
+        count = len(recent_fasts)
+        avg_hours = round(sum(item[0] for item in recent_fasts) / count / 3600, 1)
+        completed_targets = sum(1 for _, completion in recent_fasts if completion is not None and completion >= 100)
+        fasting_summary = (
+            f"Fasting progress: {count} fasts, {avg_hours}h avg, "
+            f"{completed_targets}/{count} targets achieved"
+        )
+    else:
+        fasting_summary = "Fasting progress: no completed fasts in last 30 days"
+
+    return {
+        "weight": weight_summary,
+        "walking": steps_summary,
+        "fasting": fasting_summary,
+    }
+
+
 def _calculate_daily_net_calories(user_data: dict, date: str) -> tuple[float, float, float]:
     """Return (net, consumed, burned) calories for a given date."""
     consumed = sum(
@@ -1369,6 +1460,8 @@ def fasting():
         return login_check
     
     duration_options = [12, 14, 16, 18, 20, 48]
+    user_data = _get_current_user_data()
+    fasting_state = user_data.setdefault("fasting_data", fitness_analysis._default_fasting_data())
 
     completed_fast = None
     if request.method == "POST":
@@ -1397,12 +1490,12 @@ def fasting():
                 except ValueError:
                     custom_start = None
 
-            fitness_analysis.start_fast(selected_hours, custom_start)
+            fitness_analysis.start_fast(selected_hours, custom_start, fasting_state=fasting_state)
         elif action == "stop":
-            completed_fast = fitness_analysis.end_fast(now=_user_now())
+            completed_fast = fitness_analysis.end_fast(now=_user_now(), fasting_state=fasting_state)
         elif action == "delete_history":
             try:
-                fitness_analysis.delete_fast_entry(int(request.form.get("history_index", "")))
+                fitness_analysis.delete_fast_entry(int(request.form.get("history_index", "")), fasting_state=fasting_state)
             except (ValueError, TypeError):
                 pass
         elif action == "edit_history":
@@ -1413,12 +1506,13 @@ def fasting():
                     request.form.get("edit_start", "").strip(),
                     request.form.get("edit_end", "").strip(),
                     request.form.get("edit_target_hours", "").strip() or None,
+                    fasting_state=fasting_state,
                 )
             except (ValueError, TypeError):
                 pass
         return redirect(url_for("fasting"))
 
-    history = fitness_analysis.fasting_data["history"]
+    history = fasting_state["history"]
 
     # Last completed fast H:M:S breakdown
     last_entry = history[-1] if history else None
@@ -1434,16 +1528,18 @@ def fasting():
         completed_parts = {"h": secs // 3600, "m": (secs % 3600) // 60, "s": secs % 60}
 
     user_now = _user_now()
-    progress = fitness_analysis.get_fasting_progress(now=user_now)
-    current_target_hours = fitness_analysis.fasting_data["current_fast"].get("target_hours") or 16
+    progress = fitness_analysis.get_fasting_progress(now=user_now, fasting_state=fasting_state)
+    current_target_hours = fasting_state["current_fast"].get("target_hours") or 16
     now_iso = user_now.strftime("%Y-%m-%dT%H:%M")
 
     # Expected fast end time
     fast_end_str = None
-    cf = fitness_analysis.fasting_data["current_fast"]
+    cf = fasting_state["current_fast"]
     if cf.get("is_active") and cf.get("start_time") and cf.get("target_hours"):
-        end_dt = cf["start_time"] + timedelta(hours=cf["target_hours"])
-        fast_end_str = end_dt.strftime("%d %b %Y, %I:%M %p")
+        start_dt = _parse_iso_datetime(cf.get("start_time"))
+        if start_dt is not None:
+            end_dt = start_dt + timedelta(hours=cf["target_hours"])
+            fast_end_str = end_dt.strftime("%d %b %Y, %I:%M %p")
 
     # History index to show edit form for
     editing_index = None
@@ -1456,8 +1552,8 @@ def fasting():
 
     return render_template(
         "fasting.html",
-        fasting_data=fitness_analysis.fasting_data,
-        fasting_duration=fitness_analysis.get_fasting_duration(now=user_now),
+        fasting_data=fasting_state,
+        fasting_duration=fitness_analysis.get_fasting_duration(now=user_now, fasting_state=fasting_state),
         last_duration_parts=last_duration_parts,
         duration_options=duration_options,
         current_target_hours=current_target_hours,
@@ -1495,6 +1591,7 @@ def graph():
 
     current_target = profile.get("daily_calories_target") or DAILY_TARGETS["calories"]
     graph_data = _build_graph_rows(user_data)
+    thirty_day_summary = _summarize_last_30_days(user_data)
     graph_url = None
 
     if graph_data:
@@ -1552,6 +1649,7 @@ def graph():
         "graph.html",
         graph_data=graph_data,
         graph_url=graph_url,
+        thirty_day_summary=thirty_day_summary,
         current_target=current_target,
         target_saved=request.args.get("saved") == "1",
     )

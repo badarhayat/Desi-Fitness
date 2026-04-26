@@ -24,6 +24,12 @@
     <div class="image-card">
         <img src="{{ graph_url }}" alt="Progress graph / پیش رفت گراف">
     </div>
+    <div class="list-card" style="margin-top: 1rem;">
+        <h2>{{ t("Last 30 Days Summary / گزشتہ 30 دن کا خلاصہ") }}</h2>
+        <p>{{ thirty_day_summary.weight }}</p>
+        <p>{{ thirty_day_summary.walking }}</p>
+        <p>{{ thirty_day_summary.fasting }}</p>
+    </div>
     {% else %}
     <p class="muted">Graph banane ke liye weight, steps aur calories add karein / گراف کے لیے وزن، قدم اور کیلوریز شامل کریں</p>
     {% endif %}

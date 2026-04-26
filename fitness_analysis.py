@@ -34,6 +34,42 @@ fasting_data = {
 }
 
 
+def _default_fasting_data() -> dict:
+    return {
+        "current_fast": {
+            "start_time": None,
+            "is_active": False,
+            "target_hours": None,
+            "target_seconds": None,
+        },
+        "history": [],
+    }
+
+
+def _get_fasting_state(fasting_state: dict | None) -> dict:
+    state = fasting_state if fasting_state is not None else fasting_data
+    state.setdefault("current_fast", {})
+    state["current_fast"].setdefault("start_time", None)
+    state["current_fast"].setdefault("is_active", False)
+    state["current_fast"].setdefault("target_hours", None)
+    state["current_fast"].setdefault("target_seconds", None)
+    state.setdefault("history", [])
+    return state
+
+
+def _to_datetime(value) -> datetime | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value)
+        except ValueError:
+            return None
+    return None
+
+
 def _ensure_user_data_keys(data: dict) -> dict:
     """Backfill any keys missing from older saves so the app never crashes."""
     data.setdefault("weight_log", [])
@@ -44,6 +80,13 @@ def _ensure_user_data_keys(data: dict) -> dict:
     data.setdefault("custom_dishes", [])
     data.setdefault("custom_nutrition_db", {})
     data.setdefault("exercise_log", [])
+    fasting_state = data.setdefault("fasting_data", _default_fasting_data())
+    fasting_state.setdefault("current_fast", {})
+    fasting_state["current_fast"].setdefault("start_time", None)
+    fasting_state["current_fast"].setdefault("is_active", False)
+    fasting_state["current_fast"].setdefault("target_hours", None)
+    fasting_state["current_fast"].setdefault("target_seconds", None)
+    fasting_state.setdefault("history", [])
     profile = data.setdefault("profile", {})
     profile.setdefault("name", "")
     profile.setdefault("height_cm", None)
@@ -139,32 +182,36 @@ def calculate_exercise_calories(exercise_type: str, reps: int) -> float:
     return round(reps * rate, 2)
 
 
-def start_fast(target_hours: int = 16, start_time: datetime = None) -> None:
-    if fasting_data["current_fast"]["is_active"]:
+def start_fast(target_hours: int = 16, start_time: datetime = None, fasting_state: dict | None = None) -> None:
+    state = _get_fasting_state(fasting_state)
+    if state["current_fast"]["is_active"]:
         print("Fast already active")
         return
 
     target_hours = max(1, int(target_hours))
 
     effective_start = start_time if (start_time and start_time < datetime.now()) else start_time if start_time else datetime.now()
-    fasting_data["current_fast"]["start_time"] = effective_start
-    fasting_data["current_fast"]["is_active"] = True
-    fasting_data["current_fast"]["target_hours"] = target_hours
-    fasting_data["current_fast"]["target_seconds"] = target_hours * 3600
+    state["current_fast"]["start_time"] = effective_start.isoformat()
+    state["current_fast"]["is_active"] = True
+    state["current_fast"]["target_hours"] = target_hours
+    state["current_fast"]["target_seconds"] = target_hours * 3600
     print("Fasting started")
 
 
-def end_fast(now: datetime = None) -> dict | None:
-    if not fasting_data["current_fast"]["is_active"]:
+def end_fast(now: datetime = None, fasting_state: dict | None = None) -> dict | None:
+    state = _get_fasting_state(fasting_state)
+    if not state["current_fast"]["is_active"]:
         print("No active fast")
         return None
 
-    start = fasting_data["current_fast"]["start_time"]
+    start = _to_datetime(state["current_fast"]["start_time"])
+    if start is None:
+        return None
     end = now if now is not None else datetime.now()
     total_seconds = int((end - start).total_seconds())
     duration = total_seconds / 3600
-    target_hours = fasting_data["current_fast"].get("target_hours")
-    target_seconds = fasting_data["current_fast"].get("target_seconds")
+    target_hours = state["current_fast"].get("target_hours")
+    target_seconds = state["current_fast"].get("target_seconds")
     if not target_seconds and target_hours:
         target_seconds = int(target_hours * 3600)
 
@@ -180,28 +227,32 @@ def end_fast(now: datetime = None) -> dict | None:
         "target_hours": target_hours,
         "completion_percent": completion_percent,
     }
-    fasting_data["history"].append(entry)
+    state["history"].append(entry)
 
-    fasting_data["current_fast"]["start_time"] = None
-    fasting_data["current_fast"]["is_active"] = False
-    fasting_data["current_fast"]["target_hours"] = None
-    fasting_data["current_fast"]["target_seconds"] = None
+    state["current_fast"]["start_time"] = None
+    state["current_fast"]["is_active"] = False
+    state["current_fast"]["target_hours"] = None
+    state["current_fast"]["target_seconds"] = None
     print(f"Fast ended. Duration: {duration:.2f} hours")
     return entry
 
 
-def get_fasting_duration(now: datetime = None) -> float:
-    if not fasting_data["current_fast"]["is_active"]:
+def get_fasting_duration(now: datetime = None, fasting_state: dict | None = None) -> float:
+    state = _get_fasting_state(fasting_state)
+    if not state["current_fast"]["is_active"]:
         return 0.0
 
-    start = fasting_data["current_fast"]["start_time"]
+    start = _to_datetime(state["current_fast"]["start_time"])
+    if start is None:
+        return 0.0
     _now = now if now is not None else datetime.now()
     duration = (_now - start).total_seconds() / 3600
     return round(duration, 2)
 
 
-def get_fasting_progress(now: datetime = None) -> dict[str, float | int]:
-    if not fasting_data["current_fast"].get("is_active"):
+def get_fasting_progress(now: datetime = None, fasting_state: dict | None = None) -> dict[str, float | int]:
+    state = _get_fasting_state(fasting_state)
+    if not state["current_fast"].get("is_active"):
         return {
             "elapsed_seconds": 0,
             "remaining_seconds": 0,
@@ -209,7 +260,7 @@ def get_fasting_progress(now: datetime = None) -> dict[str, float | int]:
             "completion_percent": 0,
         }
 
-    start = fasting_data["current_fast"].get("start_time")
+    start = _to_datetime(state["current_fast"].get("start_time"))
     if start is None:
         return {
             "elapsed_seconds": 0,
@@ -220,7 +271,7 @@ def get_fasting_progress(now: datetime = None) -> dict[str, float | int]:
 
     _now = now if now is not None else datetime.now()
     elapsed_seconds = max(0, int((_now - start).total_seconds()))
-    target_seconds = fasting_data["current_fast"].get("target_seconds") or 0
+    target_seconds = state["current_fast"].get("target_seconds") or 0
     remaining_seconds = max(0, int(target_seconds) - elapsed_seconds) if target_seconds else 0
 
     completion_percent = 0
@@ -235,17 +286,25 @@ def get_fasting_progress(now: datetime = None) -> dict[str, float | int]:
     }
 
 
-def delete_fast_entry(index: int) -> bool:
+def delete_fast_entry(index: int, fasting_state: dict | None = None) -> bool:
+    state = _get_fasting_state(fasting_state)
     try:
-        fasting_data["history"].pop(index)
+        state["history"].pop(index)
         return True
     except IndexError:
         return False
 
 
-def edit_fast_entry(index: int, start_iso: str, end_iso: str, target_hours) -> bool:
+def edit_fast_entry(
+    index: int,
+    start_iso: str,
+    end_iso: str,
+    target_hours,
+    fasting_state: dict | None = None,
+) -> bool:
+    state = _get_fasting_state(fasting_state)
     try:
-        entry = fasting_data["history"][index]
+        entry = state["history"][index]
         start = datetime.fromisoformat(start_iso)
         end = datetime.fromisoformat(end_iso)
         if end <= start:
