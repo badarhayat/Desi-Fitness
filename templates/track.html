@@ -3,39 +3,6 @@
 {% block content %}
 
 <section class="grid">
-    <div class="panel" id="height-form">
-        <h2>{{ t("Height / قد") }}</h2>
-        {% if profile and profile.height_feet is not none %}
-        <p class="muted">{{ t("Current / موجودہ") }}: {{ profile.height_feet }} ft {{ profile.height_inches }} in</p>
-        {% endif %}
-        <form method="post">
-            <label>{{ t("Height / قد") }}</label>
-            <div class="height-row">
-                <input
-                    id="height_feet"
-                    name="height_feet"
-                    type="number"
-                    min="1" max="9"
-                    placeholder="5"
-                    value="{{ profile.height_feet if profile and profile.height_feet is not none else '' }}"
-                    required>
-                <span>ft</span>
-                <input
-                    id="height_inches"
-                    name="height_inches"
-                    type="number"
-                    min="0" max="11"
-                    placeholder="7"
-                    value="{{ profile.height_inches if profile and profile.height_inches is not none else '' }}"
-                    required>
-                <span>in</span>
-            </div>
-            <button type="submit" name="action" value="save_height">{{ t("Save Height / قد محفوظ کریں") }}</button>
-        </form>
-    </div>
-</section>
-
-<section class="grid">
     <div class="panel">
         <h1>{{ t("Weight Tracker / وزن ٹریک کریں") }}</h1>
         <form method="post">
@@ -107,80 +74,6 @@
 
 <section class="grid">
     <div class="panel">
-        <h2>Weight Log / وزن لاگ</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Date / تاریخ</th>
-                    <th>Weight / وزن</th>
-                    <th>Actions / کارروائی</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in weight_log %}
-                <tr>
-                    <td>{{ item.date }}</td>
-                    <td>{{ item.weight }}</td>
-                    <td>
-                        <div class="inline-actions">
-                        <form method="post" class="inline-form">
-                            <input type="hidden" name="weight_id" value="{{ item.id }}">
-                            <button class="secondary-btn" type="submit" name="action" value="edit_weight">{{ t("Edit / ترمیم") }}</button>
-                        </form>
-                        <form method="post" class="inline-form">
-                            <input type="hidden" name="weight_id" value="{{ item.id }}">
-                            <button class="danger-btn" type="submit" name="action" value="delete_weight">{{ t("Delete / حذف") }}</button>
-                        </form>
-                        </div>
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="3" class="muted">Abhi koi wazan entry nahin / ابھی کوئی وزن اندراج نہیں</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <div class="panel">
-        <h2>Steps Log / قدم لاگ</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Date / تاریخ</th>
-                    <th>Steps / قدم</th>
-                    <th>Calories Burned / جلائی گئی کیلوریز</th>
-                    <th>Actions / کارروائی</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in steps_log %}
-                <tr>
-                    <td>{{ item.date }}</td>
-                    <td>{{ item.steps }}</td>
-                    <td>{{ item.calories_lost }}</td>
-                    <td>
-                        <div class="inline-actions">
-                        <form method="post" class="inline-form">
-                            <input type="hidden" name="steps_id" value="{{ item.id }}">
-                            <button class="secondary-btn" type="submit" name="action" value="edit_steps">{{ t("Edit / ترمیم") }}</button>
-                        </form>
-                        <form method="post" class="inline-form">
-                            <input type="hidden" name="steps_id" value="{{ item.id }}">
-                            <button class="danger-btn" type="submit" name="action" value="delete_steps">{{ t("Delete / حذف") }}</button>
-                        </form>
-                        </div>
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="4" class="muted">Abhi koi step entry nahin / ابھی کوئی قدم اندراج نہیں</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</section>
-
-<section class="grid">
-    <div class="panel">
         <h1>{{ t("Exercise Tracker / ورزش ٹریک کریں") }}</h1>
         <form method="post">
             <label for="exercise_date">Date / تاریخ</label>
@@ -241,6 +134,38 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+</section>
+<section class="grid">
+    <div class="panel" id="height-form">
+        <h2>{{ t("Height / قد") }}</h2>
+        {% if profile and profile.height_feet is not none %}
+        <p class="muted">{{ t("Current / موجودہ") }}: {{ profile.height_feet }} ft {{ profile.height_inches }} in</p>
+        {% endif %}
+        <form method="post">
+            <label>{{ t("Height / قد") }}</label>
+            <div class="height-row">
+                <input
+                    id="height_feet"
+                    name="height_feet"
+                    type="number"
+                    min="1" max="9"
+                    placeholder="5"
+                    value="{{ profile.height_feet if profile and profile.height_feet is not none else '' }}"
+                    required>
+                <span>ft</span>
+                <input
+                    id="height_inches"
+                    name="height_inches"
+                    type="number"
+                    min="0" max="11"
+                    placeholder="7"
+                    value="{{ profile.height_inches if profile and profile.height_inches is not none else '' }}"
+                    required>
+                <span>in</span>
+            </div>
+            <button type="submit" name="action" value="save_height">{{ t("Save Height / قد محفوظ کریں") }}</button>
+        </form>
     </div>
 </section>
 {% endblock %}

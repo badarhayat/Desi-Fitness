@@ -48,16 +48,19 @@
     <div class="image-card">
         <img src="{{ graph_url }}" alt="Progress graph / پیش رفت گراف">
     </div>
-    <div class="list-card" style="margin-top: 1rem;">
+    {% else %}
+    <p class="muted">Graph banane ke liye weight, steps aur calories add karein / گراف کے لیے وزن، قدم اور کیلوریز شامل کریں</p>
+    {% endif %}
+</section>
+
+<section class="panel">
+    <div class="list-card">
         <h2>{{ t("Progress Summary / پیش رفت خلاصہ") }}</h2>
         <p class="muted" style="margin-bottom: 0.6rem;">{{ window_label }}</p>
         <p>{{ progress_summary.weight }}</p>
         <p>{{ progress_summary.walking }}</p>
         <p>{{ progress_summary.fasting }}</p>
     </div>
-    {% else %}
-    <p class="muted">Graph banane ke liye weight, steps aur calories add karein / گراف کے لیے وزن، قدم اور کیلوریز شامل کریں</p>
-    {% endif %}
 </section>
 
 <script>
