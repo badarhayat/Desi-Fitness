@@ -178,6 +178,17 @@ form {
     gap: 12px;
 }
 
+.goals-window-form {
+    padding: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.55);
+}
+
+.goals-window-form #custom-range-wrap {
+    grid-template-columns: 1fr;
+}
+
 input,
 select,
 textarea {
@@ -222,6 +233,12 @@ button,
     cursor: pointer;
     box-shadow: 0 10px 22px rgba(34, 197, 94, 0.26);
     transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+@media (min-width: 640px) {
+    .goals-window-form #custom-range-wrap {
+        grid-template-columns: 1fr 1fr;
+    }
 }
 
 button:hover,

@@ -3,7 +3,31 @@
 {% block content %}
 <section class="panel">
     <h1>{{ t("Goals & Progress / اہداف اور پیش رفت") }}</h1>
+    <form method="get" class="goals-window-form" style="margin-bottom: 1rem;">
+        <label for="window">{{ t("Summary Window / خلاصہ دورانیہ") }}</label>
+        <select id="window" name="window" onchange="toggleCustomRange(this.value)">
+            <option value="30d" {% if selected_window == "30d" %}selected{% endif %}>30 days</option>
+            <option value="6m" {% if selected_window == "6m" %}selected{% endif %}>6 months</option>
+            <option value="1y" {% if selected_window == "1y" %}selected{% endif %}>1 year</option>
+            <option value="custom" {% if selected_window == "custom" %}selected{% endif %}>Custom</option>
+        </select>
+        <div id="custom-range-wrap" style="display:{% if selected_window == 'custom' %}grid{% else %}none{% endif %}; gap: 0.75rem;">
+            <div>
+                <label for="start_date">Start date</label>
+                <input id="start_date" name="start_date" type="date" value="{{ start_date_input }}">
+            </div>
+            <div>
+                <label for="end_date">End date</label>
+                <input id="end_date" name="end_date" type="date" value="{{ end_date_input }}">
+            </div>
+        </div>
+        <button type="submit">{{ t("Apply Range / دورانیہ لاگو کریں") }}</button>
+    </form>
+
     <form method="post" style="margin-bottom: 1rem;">
+        <input type="hidden" name="window" value="{{ selected_window }}">
+        <input type="hidden" name="start_date" value="{{ start_date_input }}">
+        <input type="hidden" name="end_date" value="{{ end_date_input }}">
         <label for="daily_calories_target">{{ t("Daily Calories Target / روزانہ کیلوریز ہدف") }}</label>
         <input
             id="daily_calories_target"
@@ -25,14 +49,22 @@
         <img src="{{ graph_url }}" alt="Progress graph / پیش رفت گراف">
     </div>
     <div class="list-card" style="margin-top: 1rem;">
-        <h2>{{ t("Last 30 Days Summary / گزشتہ 30 دن کا خلاصہ") }}</h2>
-        <p>{{ thirty_day_summary.weight }}</p>
-        <p>{{ thirty_day_summary.walking }}</p>
-        <p>{{ thirty_day_summary.fasting }}</p>
+        <h2>{{ t("Progress Summary / پیش رفت خلاصہ") }}</h2>
+        <p class="muted" style="margin-bottom: 0.6rem;">{{ window_label }}</p>
+        <p>{{ progress_summary.weight }}</p>
+        <p>{{ progress_summary.walking }}</p>
+        <p>{{ progress_summary.fasting }}</p>
     </div>
     {% else %}
     <p class="muted">Graph banane ke liye weight, steps aur calories add karein / گراف کے لیے وزن، قدم اور کیلوریز شامل کریں</p>
     {% endif %}
 </section>
+
+<script>
+function toggleCustomRange(value) {
+    const wrap = document.getElementById("custom-range-wrap");
+    wrap.style.display = value === "custom" ? "grid" : "none";
+}
+</script>
 
 {% endblock %}

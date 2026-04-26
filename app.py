@@ -5,6 +5,7 @@ import math
 from pathlib import Path
 
 import matplotlib
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 from flask import Flask, g, redirect, render_template, request, session, url_for
 
@@ -525,15 +526,70 @@ def _parse_iso_datetime(value: str | None) -> datetime | None:
         return None
 
 
-def _summarize_last_30_days(user_data: dict) -> dict[str, str]:
-    today_dt = _user_now()
-    cutoff = today_dt - timedelta(days=30)
+def _resolve_goals_window() -> dict:
+    selected = request.args.get("window", "30d").strip().lower()
+    end_date = _user_now().date()
+    start_input = request.args.get("start_date", "").strip()
+    end_input = request.args.get("end_date", "").strip()
+
+    if selected == "6m":
+        start_date = end_date - timedelta(days=182)
+        label = "Last 6 months"
+    elif selected == "1y":
+        start_date = end_date - timedelta(days=365)
+        label = "Last 1 year"
+    elif selected == "custom":
+        parsed_start = _parse_iso_datetime(start_input)
+        parsed_end = _parse_iso_datetime(end_input)
+        if parsed_start is None:
+            parsed_start = _parse_iso_datetime(str(end_date - timedelta(days=30)))
+        if parsed_end is None:
+            parsed_end = _parse_iso_datetime(str(end_date))
+
+        start_date = parsed_start.date() if parsed_start else (end_date - timedelta(days=30))
+        custom_end_date = parsed_end.date() if parsed_end else end_date
+        if custom_end_date < start_date:
+            custom_end_date = start_date
+
+        end_date = custom_end_date
+        label = f"Custom: {start_date.isoformat()} to {end_date.isoformat()}"
+    else:
+        selected = "30d"
+        start_date = end_date - timedelta(days=30)
+        label = "Last 30 days"
+
+    return {
+        "selected_window": selected,
+        "start_date": start_date,
+        "end_date": end_date,
+        "start_input": start_input,
+        "end_input": end_input,
+        "label": label,
+    }
+
+
+def _filter_graph_rows_by_window(rows: list[dict], start_date, end_date) -> list[dict]:
+    filtered = []
+    for row in rows:
+        row_date_dt = _parse_iso_datetime(row.get("date"))
+        if row_date_dt is None:
+            continue
+        row_date = row_date_dt.date()
+        if start_date <= row_date <= end_date:
+            filtered.append(row)
+    return filtered
+
+
+def _summarize_progress_window(user_data: dict, start_date, end_date, label: str) -> dict[str, str]:
 
     def _windowed_points(log: list[dict], value_key: str) -> list[tuple[datetime, float]]:
         points = []
         for entry in log:
-            entry_date = _parse_iso_datetime(f"{entry.get('date', '')}T00:00")
-            if entry_date is None or entry_date < cutoff:
+            entry_date = _parse_iso_datetime(entry.get("date"))
+            if entry_date is None:
+                continue
+            only_date = entry_date.date()
+            if only_date < start_date or only_date > end_date:
                 continue
             value = entry.get(value_key)
             if value is None:
@@ -549,13 +605,13 @@ def _summarize_last_30_days(user_data: dict) -> dict[str, str]:
     if len(weight_points) >= 2:
         weight_delta = round(weight_points[-1][1] - weight_points[0][1], 2)
         if weight_delta < 0:
-            weight_summary = f"Last 30 days: {abs(weight_delta)} kg weight lost"
+            weight_summary = f"{label}: {abs(weight_delta)} kg weight lost"
         elif weight_delta > 0:
-            weight_summary = f"Last 30 days: {weight_delta} kg weight gained"
+            weight_summary = f"{label}: {weight_delta} kg weight gained"
         else:
-            weight_summary = "Last 30 days: no weight change"
+            weight_summary = f"{label}: no weight change"
     else:
-        weight_summary = "Last 30 days: not enough weight data"
+        weight_summary = f"{label}: not enough weight data"
 
     steps_points = _windowed_points(user_data.get("steps_log", []), "steps")
     if len(steps_points) >= 2:
@@ -573,7 +629,10 @@ def _summarize_last_30_days(user_data: dict) -> dict[str, str]:
     recent_fasts = []
     for item in fasting_state.get("history", []):
         end_dt = _parse_iso_datetime(item.get("end"))
-        if end_dt is None or end_dt < cutoff:
+        if end_dt is None:
+            continue
+        only_date = end_dt.date()
+        if only_date < start_date or only_date > end_date:
             continue
         duration_seconds = item.get("duration_seconds")
         if duration_seconds is None:
@@ -598,7 +657,7 @@ def _summarize_last_30_days(user_data: dict) -> dict[str, str]:
             f"{completed_targets}/{count} targets achieved"
         )
     else:
-        fasting_summary = "Fasting progress: no completed fasts in last 30 days"
+        fasting_summary = f"Fasting progress: no completed fasts in {label.lower()}"
 
     return {
         "weight": weight_summary,
@@ -1587,69 +1646,122 @@ def graph():
                 pass
         else:
             profile["daily_calories_target"] = None
-        return redirect(url_for("graph", saved="1"))
+        return redirect(
+            url_for(
+                "graph",
+                saved="1",
+                window=request.form.get("window", "30d"),
+                start_date=request.form.get("start_date", ""),
+                end_date=request.form.get("end_date", ""),
+            )
+        )
 
     current_target = profile.get("daily_calories_target") or DAILY_TARGETS["calories"]
-    graph_data = _build_graph_rows(user_data)
-    thirty_day_summary = _summarize_last_30_days(user_data)
+    window = _resolve_goals_window()
+    all_graph_rows = _build_graph_rows(user_data)
+    graph_data = _filter_graph_rows_by_window(
+        all_graph_rows,
+        window["start_date"],
+        window["end_date"],
+    )
+    progress_summary = _summarize_progress_window(
+        user_data,
+        window["start_date"],
+        window["end_date"],
+        window["label"],
+    )
     graph_url = None
 
     if graph_data:
         static_dir = Path(app.root_path) / "static"
         static_dir.mkdir(exist_ok=True)
-        graph_path = static_dir / "progress_graph.png"
+        username = _get_current_username() or "user"
+        safe_user = "".join(ch if ch.isalnum() else "_" for ch in username)
+        graph_file_name = f"progress_graph_{safe_user}.png"
+        graph_path = static_dir / graph_file_name
 
-        dates = [row["date"] for row in graph_data]
+        dates = [_parse_iso_datetime(row["date"]) for row in graph_data]
         weights = [row["weight"] if row["weight"] is not None else float("nan") for row in graph_data]
         net_calories = [
             row["net_calories"] if row["net_calories"] is not None else float("nan")
             for row in graph_data
         ]
 
-        fig, ax1 = plt.subplots(figsize=(11, 5.6), dpi=140)
+        fig, ax1 = plt.subplots(figsize=(11.8, 6.2), dpi=150)
+        fig.patch.set_facecolor("#0b1222")
+        ax1.set_facecolor("#111b31")
         ax1.plot(
             dates,
             weights,
-            color="#2563eb",
+            color="#38bdf8",
             marker="o",
-            linewidth=2.2,
-            markersize=5,
+            linewidth=2.6,
+            markersize=5.5,
             label="Weight (kg)",
         )
-        ax1.set_xlabel("Date", color="#0f172a")
-        ax1.set_ylabel("Weight (kg)", color="#2563eb")
-        ax1.tick_params(axis="y", labelcolor="#2563eb")
-        ax1.tick_params(axis="x", rotation=35, labelsize=8)
-        ax1.grid(axis="y", linestyle="--", alpha=0.28)
+        ax1.set_xlabel("Date", color="#cbd5e1", fontweight="bold")
+        ax1.set_ylabel("Weight (kg)", color="#7dd3fc", fontweight="bold")
+        ax1.tick_params(axis="y", labelcolor="#7dd3fc")
+        ax1.tick_params(axis="x", rotation=28, labelsize=9, colors="#cbd5e1")
+        ax1.grid(axis="y", linestyle="--", alpha=0.25, color="#64748b")
+        ax1.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=4, maxticks=8))
+        ax1.xaxis.set_major_formatter(mdates.DateFormatter("%d %b"))
 
         ax2 = ax1.twinx()
+        ax2.set_facecolor("none")
         ax2.plot(
             dates,
             net_calories,
-            color="#16a34a",
+            color="#22c55e",
             marker="^",
             linestyle="-",
-            linewidth=2.2,
+            linewidth=2.4,
             markersize=5,
             label="Net Calories",
         )
-        ax2.set_ylabel("Net Calories", color="#16a34a")
-        ax2.tick_params(axis="y", labelcolor="#16a34a")
+        ax2.set_ylabel("Net Calories", color="#86efac", fontweight="bold")
+        ax2.tick_params(axis="y", labelcolor="#86efac")
+
+        for spine in ax1.spines.values():
+            spine.set_color("#334155")
+        for spine in ax2.spines.values():
+            spine.set_color("#334155")
 
         lines_1, labels_1 = ax1.get_legend_handles_labels()
         lines_2, labels_2 = ax2.get_legend_handles_labels()
-        ax1.legend(lines_1 + lines_2, labels_1 + labels_2, loc="upper left")
-        plt.title("Weight and Net Calories Over Time", fontsize=12, fontweight="bold")
+        legend = ax1.legend(
+            lines_1 + lines_2,
+            labels_1 + labels_2,
+            loc="upper left",
+            frameon=True,
+            facecolor="#0f172a",
+            edgecolor="#334155",
+            labelcolor="#e2e8f0",
+        )
+        for text in legend.get_texts():
+            text.set_color("#e2e8f0")
+
+        plt.title(
+            f"Weight and Net Calories ({window['label']})",
+            fontsize=13,
+            fontweight="bold",
+            color="#e2e8f0",
+            pad=14,
+        )
         fig.tight_layout()
         fig.savefig(graph_path, dpi=160, bbox_inches="tight")
         plt.close(fig)
-        graph_url = url_for("static", filename="progress_graph.png")
+        graph_url = url_for("static", filename=graph_file_name, v=int(datetime.utcnow().timestamp()))
 
     return render_template(
         "graph.html",
         graph_data=graph_data,
         graph_url=graph_url,
-        thirty_day_summary=thirty_day_summary,
+        progress_summary=progress_summary,
+        selected_window=window["selected_window"],
+        start_date_input=window["start_input"],
+        end_date_input=window["end_input"],
+        window_label=window["label"],
         current_target=current_target,
         target_saved=request.args.get("saved") == "1",
     )
