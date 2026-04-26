@@ -323,7 +323,15 @@ def _get_dishes_with_nutrition(user_data: dict, file_paths: list[str] | None = N
             traceback.print_exc()
             continue
 
-    for custom_dish in user_data.get("custom_dishes", []):
+    GLOBAL_DISH_OWNER = "badar"
+    shared_custom_dishes = []
+    current_username = session.get("username")
+    if current_username != GLOBAL_DISH_OWNER:
+        owner_data = fitness_analysis.all_user_data.get(GLOBAL_DISH_OWNER)
+        if owner_data:
+            shared_custom_dishes = owner_data.get("custom_dishes", [])
+
+    for custom_dish in shared_custom_dishes + user_data.get("custom_dishes", []):
         try:
             dish_copy = {
                 "dish_name": custom_dish["dish_name"],
