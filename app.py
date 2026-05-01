@@ -17,6 +17,7 @@ matplotlib.use("Agg")
 app = Flask(__name__)
 app.secret_key = "desi-fitness-localization-key"
 DEFAULT_DISH_FILES = ["dishes.csv", "dishes_2.csv"]
+ADMIN_USERNAME = "badar"
 ATTA_GRAMS_PER_ROTI = 110
 DAILY_TARGETS = {
     "calories": 2000,
@@ -270,6 +271,19 @@ def _get_user_nutrition_db(user_data: dict) -> dict[str, dict[str, float]]:
         for key, value in fitness_analysis.DEFAULT_NUTRITION_DB.items()
     }
 
+    admin_data = fitness_analysis.all_user_data.get(ADMIN_USERNAME)
+    if admin_data:
+        for key, value in admin_data.get("custom_nutrition_db", {}).items():
+            normalized_key = str(key).strip().lower()
+            if not normalized_key:
+                continue
+            nutrition_db[normalized_key] = {
+                "calories": float(value.get("calories", 0)),
+                "protein": float(value.get("protein", 0)),
+                "carbs": float(value.get("carbs", 0)),
+                "fat": float(value.get("fat", 0)),
+            }
+
     for key, value in user_data.get("custom_nutrition_db", {}).items():
         normalized_key = str(key).strip().lower()
         if not normalized_key:
@@ -324,15 +338,14 @@ def _get_dishes_with_nutrition(user_data: dict, file_paths: list[str] | None = N
             traceback.print_exc()
             continue
 
-    GLOBAL_DISH_OWNER = "badar"
     shared_custom_dishes = []
-    current_username = session.get("username")
-    if current_username != GLOBAL_DISH_OWNER:
-        owner_data = fitness_analysis.all_user_data.get(GLOBAL_DISH_OWNER)
-        if owner_data:
-            shared_custom_dishes = owner_data.get("custom_dishes", [])
+    current_username = _get_current_username()
+    if current_username != ADMIN_USERNAME:
+        admin_data = fitness_analysis.all_user_data.get(ADMIN_USERNAME)
+        if admin_data:
+            shared_custom_dishes = admin_data.get("custom_dishes", [])
 
-    for custom_dish in shared_custom_dishes + user_data.get("custom_dishes", []):
+    for custom_dish in user_data.get("custom_dishes", []) + shared_custom_dishes:
         try:
             dish_copy = {
                 "dish_name": custom_dish["dish_name"],
