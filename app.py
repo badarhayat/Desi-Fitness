@@ -25,6 +25,8 @@ DAILY_TARGETS = {
     "carbs": 250,
     "fat": 65,
 }
+TARGET_BMI = 24.9
+TARGET_BODY_FAT_PERCENT = 15.0
 LANGUAGE_OPTIONS = {
     "roman": "Roman Urdu",
     "urdu": "اردو",
@@ -700,6 +702,166 @@ def _calculate_daily_net_calories(user_data: dict, date: str) -> tuple[float, fl
     return round(consumed - burned, 2), round(consumed, 2), round(burned, 2)
 
 
+def _to_positive_float(value) -> float | None:
+    try:
+        parsed = float(value)
+    except (ValueError, TypeError):
+        return None
+    return parsed if parsed > 0 else None
+
+
+def _to_positive_int(value) -> int | None:
+    try:
+        parsed = int(value)
+    except (ValueError, TypeError):
+        return None
+    return parsed if parsed > 0 else None
+
+
+def _bmi_category_and_tone(bmi_value: float) -> tuple[str, str]:
+    if bmi_value < 18.5:
+        return "Underweight", "amber"
+    if bmi_value <= 24.9:
+        return "Normal", "green"
+    if bmi_value <= 29.9:
+        return "Overweight", "amber"
+    return "Obese", "red"
+
+
+def _body_fat_category_and_tone(body_fat_percent: float) -> tuple[str, str]:
+    if body_fat_percent >= 25:
+        return "Obese", "red"
+    if body_fat_percent >= 18:
+        return "Average", "amber"
+    return "Fitness", "green"
+
+
+def _calculate_bmi_metrics(weight_kg: float | None, height_cm: float | None) -> dict | None:
+    weight_value = _to_positive_float(weight_kg)
+    height_value_cm = _to_positive_float(height_cm)
+    if weight_value is None or height_value_cm is None:
+        return None
+
+    height_m = height_value_cm / 100
+    if height_m <= 0:
+        return None
+
+    bmi_value = round(weight_value / (height_m * height_m), 1)
+    category, tone = _bmi_category_and_tone(bmi_value)
+    target_weight = TARGET_BMI * (height_m * height_m)
+    weight_to_lose = round(max(0.0, weight_value - target_weight), 1)
+
+    return {
+        "value": bmi_value,
+        "category": category,
+        "tone": tone,
+        "target": round(TARGET_BMI, 1),
+        "weight_to_lose": weight_to_lose,
+    }
+
+
+def _calculate_male_navy_body_fat(height_inches: float, waist_inches: float, neck_inches: float) -> float | None:
+    if height_inches <= 0 or waist_inches <= 0 or neck_inches <= 0:
+        return None
+    if waist_inches <= neck_inches:
+        return None
+
+    body_fat = (
+        86.010 * math.log10(waist_inches - neck_inches)
+        - 70.041 * math.log10(height_inches)
+        + 36.76
+    )
+    return body_fat if body_fat > 0 else None
+
+
+def _calculate_body_fat_metrics(
+    weight_kg: float | None,
+    height_inches: float | None,
+    waist_inches: float | None,
+    neck_inches: float | None,
+    age_years: int | None,
+) -> dict | None:
+    weight_value = _to_positive_float(weight_kg)
+    height_value = _to_positive_float(height_inches)
+    waist_value = _to_positive_float(waist_inches)
+    neck_value = _to_positive_float(neck_inches)
+    age_value = _to_positive_int(age_years)
+
+    if None in (weight_value, height_value, waist_value, neck_value, age_value):
+        return None
+
+    body_fat = _calculate_male_navy_body_fat(height_value, waist_value, neck_value)
+    if body_fat is None:
+        return None
+
+    body_fat = round(body_fat, 1)
+    category, tone = _body_fat_category_and_tone(body_fat)
+    target_body_fat_fraction = TARGET_BODY_FAT_PERCENT / 100
+    lean_body_mass = weight_value * (1 - (body_fat / 100))
+    if lean_body_mass <= 0 or target_body_fat_fraction >= 1:
+        return None
+
+    target_weight = lean_body_mass / (1 - target_body_fat_fraction)
+    weight_to_lose = round(max(0.0, weight_value - target_weight), 1)
+
+    return {
+        "value": body_fat,
+        "category": category,
+        "tone": tone,
+        "target": round(TARGET_BODY_FAT_PERCENT, 1),
+        "weight_to_lose": weight_to_lose,
+    }
+
+
+def _latest_weight_kg(user_data: dict) -> float | None:
+    if not user_data.get("weight_log"):
+        return None
+    latest_weight_entry = max(
+        user_data["weight_log"],
+        key=lambda item: (item.get("date", ""), item.get("id", 0)),
+    )
+    return _to_positive_float(latest_weight_entry.get("weight"))
+
+
+def _build_body_metrics(profile: dict, latest_weight: float | None) -> dict:
+    height_cm = _to_positive_float(profile.get("height_cm")) if profile else None
+    height_feet = _to_positive_int(profile.get("height_feet")) if profile else None
+    height_inches_component = profile.get("height_inches") if profile else None
+    waist_inches = _to_positive_float(profile.get("waist_inches")) if profile else None
+    neck_inches = _to_positive_float(profile.get("neck_inches")) if profile else None
+    age_years = _to_positive_int(profile.get("age_years")) if profile else None
+
+    total_height_inches = None
+    if height_feet is not None and height_inches_component is not None:
+        try:
+            inches_component = float(height_inches_component)
+        except (ValueError, TypeError):
+            inches_component = None
+        if inches_component is not None and inches_component >= 0:
+            total_height_inches = (height_feet * 12) + inches_component
+
+    bmi_metrics = _calculate_bmi_metrics(latest_weight, height_cm)
+    body_fat_metrics = _calculate_body_fat_metrics(
+        latest_weight,
+        total_height_inches,
+        waist_inches,
+        neck_inches,
+        age_years,
+    )
+
+    body_fat_missing = any(
+        value is None
+        for value in (latest_weight, height_cm, waist_inches, neck_inches, age_years)
+    )
+
+    return {
+        "bmi": bmi_metrics,
+        "body_fat": body_fat_metrics,
+        "body_fat_missing": body_fat_missing or body_fat_metrics is None,
+        "missing_message": "Add your measurements in the Track tab to calculate body fat.",
+    }
+
+
 def _save_net_vs_target_pie(
     username: str,
     net_calories: float,
@@ -816,43 +978,8 @@ def home():
         "home_net_vs_target_pie",
     )
 
-    latest_weight = None
-    if user_data["weight_log"]:
-        latest_weight_entry = max(
-            user_data["weight_log"],
-            key=lambda item: (item.get("date", ""), item.get("id", 0)),
-        )
-        latest_weight = latest_weight_entry.get("weight")
-
-    bmi = None
-    bmi_category = None
-    bmi_note = None
-    ideal_weight_range = None
-
-    height_cm = profile.get("height_cm") if profile else None
-    if latest_weight is not None and height_cm:
-        height_m = float(height_cm) / 100
-        if height_m > 0:
-            bmi = round(float(latest_weight) / (height_m * height_m), 2)
-            normal_low = 18.5
-            normal_high = 24.9
-
-            ideal_low = round(normal_low * (height_m * height_m), 1)
-            ideal_high = round(normal_high * (height_m * height_m), 1)
-            ideal_weight_range = f"{ideal_low} kg - {ideal_high} kg"
-
-            if bmi < 18.5:
-                bmi_category = "Underweight"
-                bmi_note = "Below the standard healthy BMI range (18.5-24.9)."
-            elif bmi <= 24.9:
-                bmi_category = "Normal"
-                bmi_note = "Within the standard healthy BMI range (18.5-24.9)."
-            elif bmi <= 29.9:
-                bmi_category = "Overweight"
-                bmi_note = "Above the standard healthy BMI range (18.5-24.9)."
-            else:
-                bmi_category = "Obese"
-                bmi_note = "Well above the standard healthy BMI range (18.5-24.9)."
+    latest_weight = _latest_weight_kg(user_data)
+    body_metrics = _build_body_metrics(profile, latest_weight)
 
     return render_template(
         "index.html",
@@ -874,10 +1001,7 @@ def home():
         walk_minutes_needed=walk_minutes_needed,
         latest_weight=latest_weight,
         profile=profile,
-        bmi=bmi,
-        bmi_category=bmi_category,
-        bmi_note=bmi_note,
-        ideal_weight_range=ideal_weight_range,
+        body_metrics=body_metrics,
     )
 
 
@@ -1492,38 +1616,8 @@ def track():
             return redirect(url_for("track") + "#height-form")
 
     profile = user_data.get("profile", {})
-    latest_weight = None
-    if user_data["weight_log"]:
-        latest_weight_entry = max(
-            user_data["weight_log"],
-            key=lambda item: (item.get("date", ""), item.get("id", 0)),
-        )
-        latest_weight = latest_weight_entry.get("weight")
-
-    bmi = None
-    bmi_category = None
-    bmi_note = None
-    ideal_weight_range = None
-    height_cm = profile.get("height_cm") if profile else None
-    if latest_weight is not None and height_cm:
-        height_m = float(height_cm) / 100
-        if height_m > 0:
-            bmi = round(float(latest_weight) / (height_m * height_m), 2)
-            ideal_low = round(18.5 * (height_m * height_m), 1)
-            ideal_high = round(24.9 * (height_m * height_m), 1)
-            ideal_weight_range = f"{ideal_low} kg - {ideal_high} kg"
-            if bmi < 18.5:
-                bmi_category = "Underweight"
-                bmi_note = "Below the standard healthy BMI range (18.5-24.9)."
-            elif bmi <= 24.9:
-                bmi_category = "Normal"
-                bmi_note = "Within the standard healthy BMI range (18.5-24.9)."
-            elif bmi <= 29.9:
-                bmi_category = "Overweight"
-                bmi_note = "Above the standard healthy BMI range (18.5-24.9)."
-            else:
-                bmi_category = "Obese"
-                bmi_note = "Well above the standard healthy BMI range (18.5-24.9)."
+    latest_weight = _latest_weight_kg(user_data)
+    body_metrics = _build_body_metrics(profile, latest_weight)
 
     return render_template(
         "track.html",
@@ -1537,10 +1631,7 @@ def track():
         editing_exercise=editing_exercise,
         profile=profile,
         latest_weight=latest_weight,
-        bmi=bmi,
-        bmi_category=bmi_category,
-        bmi_note=bmi_note,
-        ideal_weight_range=ideal_weight_range,
+        body_metrics=body_metrics,
     )
 
 

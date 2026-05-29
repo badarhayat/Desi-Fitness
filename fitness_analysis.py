@@ -92,6 +92,9 @@ def _ensure_user_data_keys(data: dict) -> dict:
     profile.setdefault("height_cm", None)
     profile.setdefault("height_feet", None)
     profile.setdefault("height_inches", None)
+    profile.setdefault("waist_inches", None)
+    profile.setdefault("neck_inches", None)
+    profile.setdefault("age_years", None)
     profile.setdefault("daily_calories_target", None)
     profile.setdefault("is_registered", False)
     return data
