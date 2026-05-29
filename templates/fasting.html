@@ -78,10 +78,48 @@
 <section class="panel">
     <h2>Fasting History / روزہ ہسٹری</h2>
     {% if fasting_history_graph_url %}
+    {% set last_idx = (fasting_data.history|length) - 1 %}
+    {% set last_item = fasting_data.history[last_idx] %}
+    {% set last_secs = (last_item.duration_seconds if last_item.duration_seconds is defined else (last_item.duration_hours * 3600)) | int %}
+    {% set last_h = last_secs // 3600 %}
+    {% set last_m = (last_secs % 3600) // 60 %}
+    {% set last_s = last_secs % 60 %}
     <div class="image-card">
         <img src="{{ fasting_history_graph_url }}" alt="Fasting duration graph with date on x-axis and fasting hours on y-axis">
     </div>
     <p class="muted" style="font-size:0.84rem; margin-top:0.5rem;">X-axis: Date / تاریخ | Y-axis: Duration of fast (hours) / روزے کا دورانیہ (گھنٹے)</p>
+
+    <div class="panel" style="margin-top:0.75rem; padding:12px; border-radius:12px;">
+        <h3 style="margin-bottom:0.35rem;">Last Fast Entry / آخری روزہ اندراج</h3>
+        <p class="muted" style="margin-bottom:0.5rem;">{{ last_item.start[:10] }} | {{ last_h }}h {{ last_m }}m {{ last_s }}s</p>
+
+        {% if editing_index == last_idx %}
+        <form method="post" style="display:grid; gap:8px;">
+            <input type="hidden" name="history_index" value="{{ last_idx }}">
+            <label for="edit_start_last">Start / شروع</label>
+            <input id="edit_start_last" type="datetime-local" name="edit_start" value="{{ last_item.start[:16] }}" required>
+
+            <label for="edit_end_last">End / ختم</label>
+            <input id="edit_end_last" type="datetime-local" name="edit_end" value="{{ last_item.end[:16] }}" required>
+
+            <label for="edit_target_last">Target hours / ہدف گھنٹے</label>
+            <input id="edit_target_last" type="number" name="edit_target_hours" min="1" max="168" value="{{ last_item.target_hours or '' }}" placeholder="optional">
+
+            <div class="split-actions">
+                <button type="submit" name="action" value="edit_history">Save / محفوظ</button>
+                <a href="{{ url_for('fasting') }}" class="secondary-btn" style="text-decoration:none;">Cancel / منسوخ</a>
+            </div>
+        </form>
+        {% else %}
+        <div class="split-actions">
+            <a class="secondary-btn" href="{{ url_for('fasting') }}?edit={{ last_idx }}" style="text-decoration:none;">Edit Last Fast / آخری روزہ ترمیم</a>
+            <form method="post" style="margin:0;">
+                <input type="hidden" name="history_index" value="{{ last_idx }}">
+                <button class="danger-btn" type="submit" name="action" value="delete_history" onclick="return confirm('Delete last fast entry? / آخری روزہ اندراج مٹائیں؟')">Delete Last Fast / آخری روزہ حذف</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
     {% else %}
     <p class="muted">Abhi fasting history nahin / ابھی روزہ ہسٹری نہیں</p>
     {% endif %}
