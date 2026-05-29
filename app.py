@@ -1062,6 +1062,18 @@ def home():
         "home_net_vs_target_pie",
     )
 
+    calories_remaining = round(max(0.0, calories_target - net_calories_today), 1)
+    protein_target = DAILY_TARGETS["protein"]
+    protein_eaten_today = round(
+        sum(
+            float(entry.get("protein", 0.0))
+            for entry in user_data.get("meal_log", [])
+            if entry.get("date") == today
+        ),
+        1,
+    )
+    protein_remaining = round(max(0.0, protein_target - protein_eaten_today), 1)
+
     latest_weight = _latest_weight_kg(user_data)
     body_metrics = _build_body_metrics(profile, latest_weight)
 
@@ -1083,6 +1095,10 @@ def home():
         net_status=net_status,
         walk_steps_needed=walk_steps_needed,
         walk_minutes_needed=walk_minutes_needed,
+        calories_remaining=calories_remaining,
+        protein_target=protein_target,
+        protein_eaten_today=protein_eaten_today,
+        protein_remaining=protein_remaining,
         latest_weight=latest_weight,
         profile=profile,
         body_metrics=body_metrics,

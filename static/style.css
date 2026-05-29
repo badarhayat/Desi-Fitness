@@ -41,10 +41,11 @@ body {
 }
 
 .app-shell {
-    width: min(100%, 520px);
+    width: 100%;
+    max-width: 520px;
     min-height: 100vh;
     margin: 0 auto;
-    padding: 12px 12px 24px;
+    padding: clamp(10px, 3.2vw, 14px) clamp(10px, 3.2vw, 14px) 24px;
     overflow-x: hidden;
 }
 
@@ -52,8 +53,9 @@ body {
     position: sticky;
     top: 10px;
     z-index: 100;
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
     gap: 8px;
     padding: 10px;
     margin-bottom: 12px;
@@ -65,8 +67,9 @@ body {
 }
 
 .brand {
-    width: 100%;
+    grid-column: 1 / -1;
     font-weight: 800;
+    font-size: 0.95rem;
     letter-spacing: 0.02em;
     color: #e2e8f0;
     margin-bottom: 2px;
@@ -74,15 +77,20 @@ body {
 
 .nav-link,
 .logout-link {
-    flex: 1 1 calc(33.333% - 8px);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
     min-width: 0;
+    min-height: 44px;
     padding: 10px 8px;
     border-radius: var(--radius-sm);
     border: 1px solid rgba(148, 163, 184, 0.24);
     background: rgba(30, 41, 59, 0.78);
     color: var(--text);
-    font-size: 0.82rem;
+    font-size: 0.84rem;
     font-weight: 600;
+    line-height: 1.2;
     text-align: center;
     text-decoration: none;
     transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
@@ -97,13 +105,14 @@ body {
 }
 
 .logout-link {
-    flex: 1 1 100%;
+    grid-column: 1 / -1;
     background: rgba(127, 29, 29, 0.28);
     color: #fecaca;
     border-color: rgba(248, 113, 113, 0.4);
 }
 
 .language-form {
+    grid-column: 1 / -1;
     width: 100%;
 }
 
@@ -123,7 +132,7 @@ body {
 
 .panel {
     margin-bottom: 12px;
-    padding: 16px;
+    padding: 14px;
     border-radius: var(--radius-lg);
     border: 1px solid var(--line);
     background: var(--surface);
@@ -145,13 +154,13 @@ h3 {
 }
 
 h1 {
-    font-size: clamp(1.45rem, 5.6vw, 2rem);
+    font-size: clamp(1.3rem, 6vw, 1.95rem);
     font-weight: 800;
     color: var(--text);
 }
 
 h2 {
-    font-size: clamp(1.1rem, 4.8vw, 1.4rem);
+    font-size: clamp(1rem, 4.6vw, 1.35rem);
     font-weight: 700;
     color: #e2e8f0;
 }
@@ -163,6 +172,7 @@ h3 {
 
 p {
     margin: 0 0 8px;
+    overflow-wrap: anywhere;
 }
 
 .muted {
@@ -303,12 +313,65 @@ td {
 .dashboard-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 10px;
 }
 
 .stat-card {
     display: grid;
+    gap: 8px;
+    min-height: 190px;
+}
+
+.card-head-compact {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.priority-card {
     gap: 10px;
+}
+
+.priority-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.priority-metric {
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.52);
+    padding: 9px 10px;
+}
+
+.priority-label {
+    margin: 0 0 4px;
+    color: #d1fae5;
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.priority-value {
+    margin: 0;
+    color: #f8fafc;
+    font-size: clamp(1rem, 4.5vw, 1.25rem);
+    font-weight: 800;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+}
+
+.priority-value span {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-soft);
+}
+
+.priority-sub {
+    margin: 4px 0 0;
+    color: var(--text-soft);
+    font-size: 0.73rem;
 }
 
 .body-metrics-card {
@@ -384,7 +447,7 @@ td {
 
 .calorie-ring {
     --pct: 0;
-    width: 144px;
+    width: clamp(118px, 40vw, 144px);
     aspect-ratio: 1;
     border-radius: 50%;
     display: grid;
@@ -441,7 +504,7 @@ td {
 
 .value-lg {
     margin: 4px 0;
-    font-size: clamp(1.8rem, 8vw, 2.4rem);
+    font-size: clamp(1.55rem, 8vw, 2.2rem);
     font-weight: 800;
     color: #f1f5f9;
     font-variant-numeric: tabular-nums;
@@ -466,7 +529,7 @@ td {
 
 .quick-actions {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 10px;
     margin-top: 4px;
 }
@@ -632,7 +695,10 @@ td {
 }
 
 .image-card img {
+    display: block;
     width: 100%;
+    max-width: 100%;
+    height: auto;
     border-radius: 14px;
     border: 1px solid rgba(148, 163, 184, 0.24);
 }
@@ -730,13 +796,29 @@ small {
     border-bottom: none;
 }
 
-@media (max-width: 560px) {
-    .nav-link {
-        flex: 1 1 calc(50% - 8px);
+@media (max-width: 767px), (prefers-reduced-motion: reduce) {
+    .panel,
+    .nav-link,
+    .logout-link,
+    button,
+    .action-btn,
+    .steps-guide summary::before {
+        transition: none;
     }
 
-    .quick-actions {
-        grid-template-columns: 1fr;
+    .panel,
+    .navbar {
+        backdrop-filter: none;
+    }
+
+    .panel:hover,
+    .nav-link:hover,
+    .logout-link:hover,
+    button:hover,
+    .action-btn:hover {
+        transform: none;
+        box-shadow: var(--shadow-sm);
+        filter: none;
     }
 
     .split-actions {
@@ -764,9 +846,27 @@ small {
     }
 }
 
-@media (min-width: 700px) {
+@media (min-width: 768px) {
     .app-shell {
-        width: min(100%, 760px);
+        max-width: 920px;
+    }
+
+    .navbar {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .brand {
+        grid-column: 1 / 3;
+        align-self: center;
+        margin-bottom: 0;
+    }
+
+    .language-form {
+        grid-column: 3 / 6;
+    }
+
+    .logout-link {
+        grid-column: 6 / 7;
     }
 
     .dashboard-grid {
@@ -777,11 +877,38 @@ small {
         grid-column: 1 / -1;
     }
 
+    .priority-metrics-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .quick-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .metric-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .summary-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .app-shell {
+        max-width: 1180px;
+        padding-inline: 18px;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .wide-card {
+        grid-column: 1 / -1;
+    }
+
+    .priority-metrics-grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
     }
 }
