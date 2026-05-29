@@ -20,6 +20,9 @@
                 <a class="nav-link" href="{{ url_for('fasting') }}">{{ t("Fast / روزہ") }}</a>
                 <a class="nav-link" href="{{ url_for('graph') }}">{{ t("Goals / اہداف") }}</a>
                 <a class="nav-link" href="{{ url_for('custom_dish') }}">{{ t("Create / نیا") }}</a>
+                {% if session.get('username') == 'badar' %}
+                <a class="nav-link nav-link-admin" href="{{ url_for('admin') }}">Admin</a>
+                {% endif %}
             {% else %}
                 <a class="nav-link" href="{{ url_for('login') }}">{{ t("Login / لاگ ان") }}</a>
                 <a class="nav-link" href="{{ url_for('register') }}">{{ t("Register / رجسٹر") }}</a>

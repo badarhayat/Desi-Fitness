@@ -97,6 +97,8 @@ def _ensure_user_data_keys(data: dict) -> dict:
     profile.setdefault("age_years", None)
     profile.setdefault("daily_calories_target", None)
     profile.setdefault("is_registered", False)
+    profile.setdefault("last_seen", None)
+    profile.setdefault("created_at", None)
     return data
 
 

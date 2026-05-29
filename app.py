@@ -169,6 +169,15 @@ def _set_request_language() -> None:
     g.current_lang = _get_current_language()
 
 
+@app.before_request
+def _update_last_seen() -> None:
+    """Stamp profile.last_seen on every request for the current user."""
+    username = _get_current_username()
+    if username and username in fitness_analysis.all_user_data:
+        profile = fitness_analysis.all_user_data[username].setdefault("profile", {})
+        profile["last_seen"] = datetime.utcnow().isoformat()
+
+
 @app.after_request
 def _auto_save_user_data(response):
     """Persist the current user's data to disk after every mutating request."""
@@ -1025,6 +1034,93 @@ def logout():
     """Logout the current user."""
     session.pop("username", None)
     return redirect(url_for("login"))
+
+
+@app.route("/admin")
+def admin():
+    """Admin dashboard — accessible only to the admin user."""
+    login_check = _require_login()
+    if login_check:
+        return login_check
+    username = _get_current_username()
+    if username != ADMIN_USERNAME:
+        return redirect(url_for("home"))
+
+    today_str = _today()
+    now_utc = datetime.utcnow()
+    cutoff_7 = (now_utc - timedelta(days=7)).isoformat()
+    cutoff_30 = (now_utc - timedelta(days=30)).isoformat()
+
+    users = fitness_analysis.all_user_data
+
+    # --- User Statistics ---
+    total_users = len(users)
+    active_today = 0
+    active_7 = 0
+    active_30 = 0
+    recent_users = 0
+
+    # --- Usage Statistics (today) ---
+    meals_today = 0
+    weight_today = 0
+    exercise_today = 0
+
+    # --- Top Active Users ---
+    activity_counts = {}
+
+    for uname, udata in users.items():
+        profile = udata.get("profile", {})
+        last_seen = profile.get("last_seen") or ""
+        created_at = profile.get("created_at") or ""
+
+        if last_seen[:10] == today_str:
+            active_today += 1
+        if last_seen and last_seen >= cutoff_7:
+            active_7 += 1
+        if last_seen and last_seen >= cutoff_30:
+            active_30 += 1
+        if created_at and created_at >= cutoff_30:
+            recent_users += 1
+
+        # Usage stats — count today's entries
+        meals_today += sum(
+            1 for e in udata.get("meal_log", [])
+            if (e.get("date") or e.get("timestamp", ""))[:10] == today_str
+        )
+        weight_today += sum(
+            1 for e in udata.get("weight_log", [])
+            if (e.get("date") or "")[:10] == today_str
+        )
+        exercise_today += sum(
+            1 for e in udata.get("exercise_log", [])
+            if (e.get("date") or "")[:10] == today_str
+        )
+
+        # Activity count = total across all logs
+        total_activities = (
+            len(udata.get("meal_log", []))
+            + len(udata.get("weight_log", []))
+            + len(udata.get("exercise_log", []))
+            + len(udata.get("steps_log", []))
+            + len(udata.get("fasting_data", {}).get("history", []))
+        )
+        activity_counts[uname] = total_activities
+
+    top_users = sorted(activity_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+
+    return render_template(
+        "admin.html",
+        total_users=total_users,
+        active_today=active_today,
+        active_7=active_7,
+        active_30=active_30,
+        recent_users=recent_users,
+        meals_today=meals_today,
+        weight_today=weight_today,
+        exercise_today=exercise_today,
+        top_users=top_users,
+        today_str=today_str,
+    )
 
 
 @app.route("/")

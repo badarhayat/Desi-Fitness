@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel">
+    <h1>Admin Dashboard</h1>
+
+    <!-- ── User Statistics ─────────────────────────────────────── -->
+    <div class="card-head-compact">User Statistics</div>
+    <div class="admin-stats-grid">
+        <div class="admin-stat-card">
+            <div class="admin-stat-value">{{ total_users }}</div>
+            <div class="admin-stat-label">Total Users</div>
+        </div>
+        <div class="admin-stat-card">
+            <div class="admin-stat-value">{{ active_today }}</div>
+            <div class="admin-stat-label">Active Today</div>
+        </div>
+        <div class="admin-stat-card">
+            <div class="admin-stat-value">{{ active_7 }}</div>
+            <div class="admin-stat-label">Active Last 7 Days</div>
+        </div>
+        <div class="admin-stat-card">
+            <div class="admin-stat-value">{{ active_30 }}</div>
+            <div class="admin-stat-label">Active Last 30 Days</div>
+        </div>
+        <div class="admin-stat-card">
+            <div class="admin-stat-value">{{ recent_users }}</div>
+            <div class="admin-stat-label">New Users (30 d)</div>
+        </div>
+    </div>
+
+    <!-- ── Usage Statistics ─────────────────────────────────────── -->
+    <div class="card-head-compact" style="margin-top: 1.5rem;">Usage Today ({{ today_str }})</div>
+    <div class="admin-stats-grid">
+        <div class="admin-stat-card">
+            <div class="admin-stat-value">{{ meals_today }}</div>
+            <div class="admin-stat-label">Meals Logged</div>
+        </div>
+        <div class="admin-stat-card">
+            <div class="admin-stat-value">{{ weight_today }}</div>
+            <div class="admin-stat-label">Weight Entries</div>
+        </div>
+        <div class="admin-stat-card">
+            <div class="admin-stat-value">{{ exercise_today }}</div>
+            <div class="admin-stat-label">Exercise Entries</div>
+        </div>
+    </div>
+
+    <!-- ── Top Active Users ─────────────────────────────────────── -->
+    <div class="card-head-compact" style="margin-top: 1.5rem;">Top Active Users</div>
+    {% if top_users %}
+    <div class="admin-top-users">
+        {% for uname, count in top_users %}
+        <div class="admin-top-row">
+            <span class="admin-rank">{{ loop.index }}</span>
+            <span class="admin-uname">{{ uname }}</span>
+            <span class="admin-ucount">{{ count }} activities</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-state">No activity data yet.</p>
+    {% endif %}
+
+</section>
+{% endblock %}
