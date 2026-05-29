@@ -918,6 +918,79 @@ def _save_net_vs_target_pie(
     return url_for("static", filename=out_path.name)
 
 
+def _save_fasting_history_graph(username: str, fasting_state: dict) -> str | None:
+    history = fasting_state.get("history", []) if fasting_state else []
+    if not history:
+        return None
+
+    points: list[tuple[datetime, float]] = []
+    for item in history:
+        end_dt = _parse_iso_datetime(item.get("end")) or _parse_iso_datetime(item.get("start"))
+        if end_dt is None:
+            continue
+
+        duration_seconds = item.get("duration_seconds")
+        if duration_seconds is None:
+            duration_hours_fallback = item.get("duration_hours")
+            try:
+                duration_seconds = float(duration_hours_fallback) * 3600
+            except (ValueError, TypeError):
+                duration_seconds = None
+
+        try:
+            duration_hours = float(duration_seconds) / 3600 if duration_seconds is not None else None
+        except (ValueError, TypeError):
+            duration_hours = None
+
+        if duration_hours is None or duration_hours <= 0:
+            continue
+
+        points.append((end_dt, duration_hours))
+
+    if not points:
+        return None
+
+    points.sort(key=lambda item: item[0])
+    dates = [item[0] for item in points]
+    durations = [item[1] for item in points]
+
+    safe_user = "".join(ch if ch.isalnum() else "_" for ch in (username or "user"))
+    static_dir = Path(app.root_path) / "static"
+    static_dir.mkdir(exist_ok=True)
+    out_name = f"fasting_history_{safe_user}.png"
+    out_path = static_dir / out_name
+
+    fig, ax = plt.subplots(figsize=(8.4, 3.8), dpi=150)
+    fig.patch.set_facecolor("#0b1222")
+    ax.set_facecolor("#111b31")
+    ax.plot(
+        dates,
+        durations,
+        color="#22c55e",
+        marker="o",
+        linewidth=2.2,
+        markersize=4.8,
+    )
+
+    ax.set_xlabel("Date", color="#cbd5e1", fontweight="bold")
+    ax.set_ylabel("Duration (hours)", color="#86efac", fontweight="bold")
+    ax.tick_params(axis="x", colors="#cbd5e1", rotation=25, labelsize=8.5)
+    ax.tick_params(axis="y", colors="#86efac")
+    ax.grid(axis="y", linestyle="--", alpha=0.25, color="#64748b")
+    ax.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=3, maxticks=7))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%d %b"))
+
+    for spine in ax.spines.values():
+        spine.set_color("#334155")
+
+    plt.title("Fasting Duration History", fontsize=11, color="#e2e8f0", pad=10, fontweight="bold")
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=160, bbox_inches="tight")
+    plt.close(fig)
+
+    return url_for("static", filename=out_name, v=int(datetime.utcnow().timestamp()))
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     """Login page for existing users."""
@@ -1713,6 +1786,8 @@ def fasting():
     progress = fitness_analysis.get_fasting_progress(now=user_now, fasting_state=fasting_state)
     current_target_hours = fasting_state["current_fast"].get("target_hours") or 16
     now_iso = user_now.strftime("%Y-%m-%dT%H:%M")
+    username = _get_current_username() or "user"
+    fasting_history_graph_url = _save_fasting_history_graph(username, fasting_state)
 
     # Expected fast end time
     fast_end_str = None
@@ -1746,6 +1821,7 @@ def fasting():
         now_iso=now_iso,
         fast_end_str=fast_end_str,
         editing_index=editing_index,
+        fasting_history_graph_url=fasting_history_graph_url,
     )
 
 
