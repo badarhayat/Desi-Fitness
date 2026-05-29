@@ -629,16 +629,14 @@ def _summarize_progress_window(user_data: dict, start_date, end_date, label: str
         weight_summary = f"{label}: not enough weight data"
 
     steps_points = _windowed_points(user_data.get("steps_log", []), "steps")
-    if len(steps_points) >= 2:
-        steps_delta = int(round(steps_points[-1][1] - steps_points[0][1]))
-        if steps_delta < 0:
-            steps_summary = f"Walking change: {abs(steps_delta)} fewer steps/day"
-        elif steps_delta > 0:
-            steps_summary = f"Walking change: {steps_delta} more steps/day"
-        else:
-            steps_summary = "Walking change: no difference"
+    if steps_points:
+        total_steps = sum(point[1] for point in steps_points)
+        total_days = max(1, (end_date - start_date).days + 1)
+        total_weeks = max(total_days / 7, 1)
+        average_steps_per_week = int(round(total_steps / total_weeks))
+        steps_summary = f"Average walking: {average_steps_per_week:,} steps/week"
     else:
-        steps_summary = "Walking change: not enough step data"
+        steps_summary = "Average walking: no step data in selected range"
 
     fasting_state = user_data.setdefault("fasting_data", fitness_analysis._default_fasting_data())
     recent_fasts = []
