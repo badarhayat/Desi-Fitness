@@ -15,47 +15,6 @@
 </section>
 
 <section class="dashboard-grid">
-    <article class="panel stat-card wide-card priority-card">
-        <div class="card-head-compact">
-            <h2>{{ t("Today Essentials / آج کی اہم چیزیں") }}</h2>
-            <span class="status-badge badge-green">{{ t("Mobile First / موبائل") }}</span>
-        </div>
-
-        {% set target_lose = body_metrics.body_fat.weight_to_lose if body_metrics.body_fat else (body_metrics.bmi.weight_to_lose if body_metrics.bmi else none) %}
-        <div class="priority-metrics-grid">
-            <div class="priority-metric">
-                <p class="priority-label">{{ t("Calories Remaining / باقی کیلوریز") }}</p>
-                <p class="priority-value">{{ "%.1f"|format(calories_remaining) }} <span>kcal</span></p>
-            </div>
-
-            <div class="priority-metric">
-                <p class="priority-label">{{ t("Current Weight / موجودہ وزن") }}</p>
-                <p class="priority-value">{% if latest_weight is not none %}{{ "%.1f"|format(latest_weight) }} <span>kg</span>{% else %}<span>--</span>{% endif %}</p>
-            </div>
-
-            <div class="priority-metric">
-                <p class="priority-label">{{ t("BMI / بی ایم آئی") }}</p>
-                <p class="priority-value">{% if body_metrics.bmi %}{{ "%.1f"|format(body_metrics.bmi.value) }}{% else %}<span>--</span>{% endif %}</p>
-            </div>
-
-            <div class="priority-metric">
-                <p class="priority-label">{{ t("Body Fat % / جسمانی چربی فیصد") }}</p>
-                <p class="priority-value">{% if body_metrics.body_fat %}{{ "%.1f"|format(body_metrics.body_fat.value) }}<span>%</span>{% else %}<span>--</span>{% endif %}</p>
-            </div>
-
-            <div class="priority-metric">
-                <p class="priority-label">{{ t("Weight to Lose / کم کرنا ہے") }}</p>
-                <p class="priority-value">{% if target_lose is not none %}{{ "%.1f"|format(target_lose) }} <span>kg</span>{% else %}<span>--</span>{% endif %}</p>
-            </div>
-
-            <div class="priority-metric">
-                <p class="priority-label">{{ t("Daily Protein Target / روزانہ پروٹین ہدف") }}</p>
-                <p class="priority-value">{{ "%.1f"|format(protein_target) }} <span>g</span></p>
-                <p class="priority-sub">{{ t("Taken / لیا") }} {{ "%.1f"|format(protein_eaten_today) }}g | {{ t("Remaining / باقی") }} {{ "%.1f"|format(protein_remaining) }}g</p>
-            </div>
-        </div>
-    </article>
-
     <article class="panel stat-card">
         <h2>{{ t("Calories / کیلوریز") }}</h2>
         <div class="ring-wrap">
