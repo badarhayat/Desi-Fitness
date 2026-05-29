@@ -59,40 +59,44 @@
     <article class="panel stat-card wide-card body-metrics-card">
         <h2>{{ t("Body Metrics / باڈی میٹرکس") }}</h2>
 
-        <section class="metric-section">
-            <div class="metric-head">
-                <h3>{{ t("BMI / بی ایم آئی") }}</h3>
+        <div class="body-metrics-sections">
+            <section class="metric-section">
+                <div class="metric-head">
+                    <h3>{{ t("BMI / بی ایم آئی") }}</h3>
+                    {% if body_metrics.bmi %}
+                    <span class="status-badge badge-{{ body_metrics.bmi.tone }}">{{ body_metrics.bmi.category }}</span>
+                    {% endif %}
+                </div>
                 {% if body_metrics.bmi %}
-                <span class="status-badge badge-{{ body_metrics.bmi.tone }}">{{ body_metrics.bmi.category }}</span>
+                <p class="metric-main">{{ "%.1f"|format(body_metrics.bmi.value) }}</p>
+                <div class="metric-meta-grid">
+                    <p class="metric-meta-item"><strong>{{ t("Target / ہدف") }}</strong> {{ "%.1f"|format(body_metrics.bmi.target) }}</p>
+                    <p class="metric-meta-item"><strong>{{ t("Lose / کم کریں") }}</strong> {{ "%.1f"|format(body_metrics.bmi.weight_to_lose) }} kg</p>
+                </div>
+                {% else %}
+                <p class="muted metric-note">{{ t("Add height and latest weight in Track to calculate BMI / BMI کے لئے ٹریک میں قد اور وزن شامل کریں") }}</p>
                 {% endif %}
-            </div>
-            {% if body_metrics.bmi %}
-            <p class="metric-row"><strong>{{ t("BMI / بی ایم آئی") }}:</strong> {{ "%.1f"|format(body_metrics.bmi.value) }}</p>
-            <p class="metric-row"><strong>{{ t("Category / درجہ") }}:</strong> {{ body_metrics.bmi.category }}</p>
-            <p class="metric-row"><strong>{{ t("Target BMI / ہدف بی ایم آئی") }}:</strong> {{ "%.1f"|format(body_metrics.bmi.target) }}</p>
-            <p class="metric-row"><strong>{{ t("Lose / کم کریں") }}:</strong> {{ "%.1f"|format(body_metrics.bmi.weight_to_lose) }} kg</p>
-            {% else %}
-            <p class="muted">{{ t("Add height and latest weight in Track to calculate BMI / BMI کے لئے ٹریک میں قد اور وزن شامل کریں") }}</p>
-            {% endif %}
-        </section>
+            </section>
 
-        <section class="metric-section">
-            <div class="metric-head">
-                <h3>{{ t("Body Fat / جسمانی چربی") }}</h3>
+            <section class="metric-section">
+                <div class="metric-head">
+                    <h3>{{ t("Body Fat / جسمانی چربی") }}</h3>
+                    {% if body_metrics.body_fat %}
+                    <span class="status-badge badge-{{ body_metrics.body_fat.tone }}">{{ body_metrics.body_fat.category }}</span>
+                    {% endif %}
+                </div>
                 {% if body_metrics.body_fat %}
-                <span class="status-badge badge-{{ body_metrics.body_fat.tone }}">{{ body_metrics.body_fat.category }}</span>
+                <p class="metric-main">{{ "%.1f"|format(body_metrics.body_fat.value) }}%</p>
+                <div class="metric-meta-grid">
+                    <p class="metric-meta-item"><strong>{{ t("Target / ہدف") }}</strong> {{ "%.1f"|format(body_metrics.body_fat.target) }}%</p>
+                    <p class="metric-meta-item"><strong>{{ t("Lose / کم کریں") }}</strong> {{ "%.1f"|format(body_metrics.body_fat.weight_to_lose) }} kg</p>
+                </div>
+                <p class="muted helper-text">{{ t("15% body fat is considered an athletic and healthy target for most men. / 15% باڈی فیٹ زیادہ تر مردوں کے لئے ایتھلیٹک اور صحت مند ہدف سمجھا جاتا ہے۔") }}</p>
+                {% else %}
+                <p class="muted metric-note">{{ t(body_metrics.missing_message + " / باڈی فیٹ کے حساب کے لئے ٹریک ٹیب میں اپنی پیمائش شامل کریں۔") }}</p>
                 {% endif %}
-            </div>
-            {% if body_metrics.body_fat %}
-            <p class="metric-row"><strong>{{ t("Body Fat / جسمانی چربی") }}:</strong> {{ "%.1f"|format(body_metrics.body_fat.value) }}%</p>
-            <p class="metric-row"><strong>{{ t("Category / درجہ") }}:</strong> {{ body_metrics.body_fat.category }}</p>
-            <p class="metric-row"><strong>{{ t("Target / ہدف") }}:</strong> {{ "%.1f"|format(body_metrics.body_fat.target) }}%</p>
-            <p class="metric-row"><strong>{{ t("Lose / کم کریں") }}:</strong> {{ "%.1f"|format(body_metrics.body_fat.weight_to_lose) }} kg</p>
-            <p class="muted helper-text">{{ t("15% body fat is considered an athletic and healthy target for most men. / 15% باڈی فیٹ زیادہ تر مردوں کے لئے ایتھلیٹک اور صحت مند ہدف سمجھا جاتا ہے۔") }}</p>
-            {% else %}
-            <p class="muted">{{ t(body_metrics.missing_message + " / باڈی فیٹ کے حساب کے لئے ٹریک ٹیب میں اپنی پیمائش شامل کریں۔") }}</p>
-            {% endif %}
-        </section>
+            </section>
+        </div>
     </article>
 </section>
 
