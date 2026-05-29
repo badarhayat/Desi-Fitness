@@ -1458,16 +1458,35 @@ def track():
         if action == "save_height":
             height_feet_raw = request.form.get("height_feet", "").strip()
             height_inches_raw = request.form.get("height_inches", "").strip()
+            waist_inches_raw = request.form.get("waist_inches", "").strip()
+            neck_inches_raw = request.form.get("neck_inches", "").strip()
+            age_years_raw = request.form.get("age_years", "").strip()
             try:
                 height_feet = int(height_feet_raw)
                 height_inches = int(height_inches_raw)
                 if 1 <= height_feet <= 9 and 0 <= height_inches <= 11:
                     height_cm = round(((height_feet * 12) + height_inches) * 2.54, 1)
-                    user_data.setdefault("profile", {}).update({
+                    profile_data = user_data.setdefault("profile", {})
+                    profile_data.update({
                         "height_cm": height_cm,
                         "height_feet": height_feet,
                         "height_inches": height_inches,
                     })
+
+                    if waist_inches_raw:
+                        waist_inches = float(waist_inches_raw)
+                        if 10 <= waist_inches <= 100:
+                            profile_data["waist_inches"] = round(waist_inches, 1)
+
+                    if neck_inches_raw:
+                        neck_inches = float(neck_inches_raw)
+                        if 8 <= neck_inches <= 40:
+                            profile_data["neck_inches"] = round(neck_inches, 1)
+
+                    if age_years_raw:
+                        age_years = int(age_years_raw)
+                        if 1 <= age_years <= 120:
+                            profile_data["age_years"] = age_years
             except (ValueError, TypeError):
                 pass
             return redirect(url_for("track") + "#height-form")
