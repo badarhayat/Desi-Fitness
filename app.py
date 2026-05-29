@@ -628,15 +628,28 @@ def _summarize_progress_window(user_data: dict, start_date, end_date, label: str
     else:
         weight_summary = f"{label}: not enough weight data"
 
-    steps_points = _windowed_points(user_data.get("steps_log", []), "steps")
-    if steps_points:
-        total_steps = sum(point[1] for point in steps_points)
-        total_days = max(1, (end_date - start_date).days + 1)
-        total_weeks = max(total_days / 7, 1)
-        average_steps_per_week = int(round(total_steps / total_weeks))
-        steps_summary = f"Average walking: {average_steps_per_week:,} steps/week"
+    week_end = end_date
+    week_start = end_date - timedelta(days=6)
+    week_steps_total = 0.0
+    week_has_entries = False
+    for entry in user_data.get("steps_log", []):
+        entry_date = _parse_iso_datetime(entry.get("date"))
+        if entry_date is None:
+            continue
+        only_date = entry_date.date()
+        if only_date < week_start or only_date > week_end:
+            continue
+        try:
+            week_steps_total += float(entry.get("steps", 0))
+            week_has_entries = True
+        except (ValueError, TypeError):
+            continue
+
+    if week_has_entries:
+        average_steps_per_day = int(round(week_steps_total / 7))
+        steps_summary = f"Average walking (last 7 days): {average_steps_per_day:,} steps/day"
     else:
-        steps_summary = "Average walking: no step data in selected range"
+        steps_summary = "Average walking (last 7 days): no step data"
 
     fasting_state = user_data.setdefault("fasting_data", fitness_analysis._default_fasting_data())
     recent_fasts = []

@@ -57,9 +57,20 @@
     <div class="list-card">
         <h2>{{ t("Progress Summary / پیش رفت خلاصہ") }}</h2>
         <p class="muted" style="margin-bottom: 0.6rem;">{{ window_label }}</p>
-        <p>{{ progress_summary.weight }}</p>
-        <p>{{ progress_summary.walking }}</p>
-        <p>{{ progress_summary.fasting }}</p>
+        <div class="summary-grid">
+            <article class="summary-item">
+                <p class="summary-label">{{ t("Weight / وزن") }}</p>
+                <p class="summary-value">{{ progress_summary.weight }}</p>
+            </article>
+            <article class="summary-item">
+                <p class="summary-label">{{ t("Steps / قدم") }}</p>
+                <p class="summary-value">{{ progress_summary.walking }}</p>
+            </article>
+            <article class="summary-item">
+                <p class="summary-label">{{ t("Fasting / روزہ") }}</p>
+                <p class="summary-value">{{ progress_summary.fasting }}</p>
+            </article>
+        </div>
     </div>
 </section>
 
