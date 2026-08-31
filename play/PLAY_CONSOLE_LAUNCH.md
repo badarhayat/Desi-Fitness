@@ -156,8 +156,8 @@ Later website-only improvements on PythonAnywhere appear in the Android app auto
 
 | Field | First release |
 | --- | --- |
-| versionName | 1.0.0 |
-| versionCode | 1 |
+| versionName | 1.0.1 |
+| versionCode | 2 |
 | applicationId | com.desifitness.app |
 | targetSdk | 36 (Android 16, required for new apps from 31 August 2026) |
 | minSdk | 24 (Android 7) |
