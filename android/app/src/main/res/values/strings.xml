@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Desi Fitness</string>
+    <string name="app_url">https://badarniazi.pythonanywhere.com</string>
+    <string name="offline_title">You are offline</string>
+    <string name="offline_message">Desi Fitness needs an internet connection to load your meals, tracking, and fasting data. Check your connection and try again.</string>
+    <string name="retry">Try again</string>
+</resources>
