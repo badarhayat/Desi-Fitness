@@ -2089,5 +2089,20 @@ def graph():
     )
 
 
+@app.route("/privacy")
+def privacy():
+    return render_template("privacy.html")
+
+
+@app.route("/terms")
+def terms():
+    return render_template("terms.html")
+
+
+@app.route("/support")
+def support():
+    return render_template("support.html")
+
+
 if __name__ == "__main__":
     app.run(debug=True)

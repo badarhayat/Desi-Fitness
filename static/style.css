@@ -32,6 +32,8 @@ body {
 
 body {
     min-height: 100vh;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
     font-family: "Inter", "Segoe UI", sans-serif;
     color: var(--text);
     background:
@@ -1057,4 +1059,39 @@ small {
     color: var(--muted);
     font-size: 0.88rem;
     padding: 1rem 0;
+}
+
+.site-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 8px;
+    padding: 16px 8px 8px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.site-footer a {
+    color: var(--text-soft);
+    text-decoration: none;
+}
+
+.site-footer a:hover {
+    color: var(--accent);
+}
+
+.legal-page h2 {
+    margin-top: 18px;
+}
+
+.legal-page ul {
+    margin: 0 0 12px 18px;
+    padding: 0;
+    color: var(--text-soft);
+}
+
+.legal-page li {
+    margin-bottom: 6px;
 }
