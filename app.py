@@ -2121,19 +2121,27 @@ def delete_account():
 
 @app.route("/delete-account", methods=["GET", "POST"])
 def delete_account_page():
-    """Public Play Store deletion page. Login uses the same username session as the app."""
+    """Public Play Store deletion page. Logged-out users verify with registration details."""
     deleted = request.args.get("deleted") == "1"
     error = None
 
     if request.method == "POST" and not _get_current_username():
-        username = request.form.get("username", "").strip().lower()
-        if not username:
-            error = "Username is required."
-        elif username not in fitness_analysis.all_user_data:
-            error = "Username not found."
+        if request.form.get("confirm") != "delete":
+            error = "Please confirm deletion to continue."
         else:
-            session["username"] = username
-            return redirect(url_for("delete_account_page"))
+            matched = fitness_analysis.verify_account_identity(
+                request.form.get("username", ""),
+                request.form.get("name", ""),
+                request.form.get("height_feet", ""),
+                request.form.get("height_inches", ""),
+            )
+            if matched:
+                fitness_analysis.delete_user_account(matched)
+                return redirect(url_for("delete_account_page", deleted=1))
+            error = (
+                "We could not verify that account. Check the username, name, "
+                "and height you used when you registered."
+            )
 
     return render_template(
         "delete_account.html",

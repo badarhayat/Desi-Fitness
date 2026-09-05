@@ -141,6 +141,36 @@ def _safe_username_token(username: str) -> str:
     return "".join(ch if ch.isalnum() else "_" for ch in (username or "user"))
 
 
+def _normalize_person_name(name: str) -> str:
+    return " ".join((name or "").split()).casefold()
+
+
+def verify_account_identity(
+    username: str,
+    name: str,
+    height_feet,
+    height_inches,
+) -> str | None:
+    """Return the username if registration details match, otherwise None.
+
+    Used for logged-out web deletion. Username alone is never enough.
+    """
+    username = (username or "").strip().lower()
+    try:
+        feet = int(height_feet)
+        inches = int(height_inches)
+    except (TypeError, ValueError):
+        return None
+    if not username or username not in all_user_data:
+        return None
+    profile = all_user_data[username].get("profile") or {}
+    if _normalize_person_name(profile.get("name", "")) != _normalize_person_name(name):
+        return None
+    if profile.get("height_feet") != feet or profile.get("height_inches") != inches:
+        return None
+    return username
+
+
 def delete_user_account(username: str) -> bool:
     """Permanently delete one user's account and personal records.
 

@@ -34,7 +34,11 @@ class AccountDeletionTest(unittest.TestCase):
         body = response.get_data(as_text=True)
         self.assertIn("Delete Your Desi Fitness Account", body)
         self.assertIn("does not collect email", body)
-        self.assertNotIn('name="confirm"', body)
+        self.assertIn("You do not need the Android app", body)
+        self.assertIn('name="username"', body)
+        self.assertIn('name="name"', body)
+        self.assertIn('name="height_feet"', body)
+        self.assertIn("Username alone is not enough", body)
 
     def test_unauthenticated_delete_is_rejected(self):
         response = self.client.post(
@@ -114,23 +118,60 @@ class AccountDeletionTest(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn(username, fitness_analysis.all_user_data)
 
-    def test_web_page_login_then_delete(self):
+    def test_logged_out_verified_request_deletes_account(self):
         username = "deltest_web"
-        self._register(username)
+        self._register(username, name="Delete Tester")
         self.client.get("/logout")
+        user_file = fitness_analysis.DATA_DIR / f"{username}.json"
+        self.assertTrue(user_file.exists())
 
-        signed_in = self.client.post(
+        username_only = self.client.post(
             "/delete-account",
-            data={"username": username},
+            data={"username": username, "confirm": "delete"},
             follow_redirects=False,
         )
-        self.assertEqual(signed_in.status_code, 302)
+        self.assertEqual(username_only.status_code, 200)
+        self.assertIn(username, fitness_analysis.all_user_data)
 
-        page = self.client.get("/delete-account")
-        self.assertIn('name="confirm"', page.get_data(as_text=True))
+        wrong = self.client.post(
+            "/delete-account",
+            data={
+                "username": username,
+                "name": "Delete Tester",
+                "height_feet": "5",
+                "height_inches": "7",
+                "confirm": "delete",
+            },
+            follow_redirects=False,
+        )
+        self.assertEqual(wrong.status_code, 200)
+        self.assertIn(username, fitness_analysis.all_user_data)
 
-        self.client.post("/account/delete", data={"confirm": "delete"})
+        deleted = self.client.post(
+            "/delete-account",
+            data={
+                "username": username,
+                "name": "Delete Tester",
+                "height_feet": "5",
+                "height_inches": "8",
+                "confirm": "delete",
+            },
+            follow_redirects=False,
+        )
+        self.assertEqual(deleted.status_code, 302)
         self.assertNotIn(username, fitness_analysis.all_user_data)
+        self.assertFalse(user_file.exists())
+        self.assertTrue(Path("/workspace/dishes.csv").exists())
+
+    def test_username_only_post_does_not_sign_in_or_delete(self):
+        username = "deltest_nousernameonly"
+        self._register(username)
+        self.client.get("/logout")
+        response = self.client.post("/delete-account", data={"username": username}, follow_redirects=False)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(username, fitness_analysis.all_user_data)
+        home = self.client.get("/", follow_redirects=False)
+        self.assertIn("/login", home.headers.get("Location", ""))
 
     def test_privacy_policy_describes_in_app_and_web_deletion(self):
         body = self.client.get("/privacy").get_data(as_text=True)
@@ -138,6 +179,8 @@ class AccountDeletionTest(unittest.TestCase):
         self.assertIn("Delete Account", body)
         self.assertIn("/delete-account", body)
         self.assertIn("does not collect email", body)
+        self.assertIn("name, and height", body)
+        self.assertIn("without installing or opening", body)
 
 
 if __name__ == "__main__":
