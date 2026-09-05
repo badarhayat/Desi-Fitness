@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel legal-page">
+    <h1>{{ t("Delete Your Desi Fitness Account / اپنا دیسی فٹنس اکاؤنٹ حذف کریں") }}</h1>
+    <p>{{ t("Use this page to request deletion of your Desi Fitness account and associated personal data. / اس صفحے سے اپنا دیسی فٹنس اکاؤنٹ اور ذاتی ڈیٹا حذف کرنے کی درخواست کریں۔") }}</p>
+
+    {% if deleted %}
+    <p class="notice">{{ t("Your account and associated personal data have been deleted. / آپ کا اکاؤنٹ اور ذاتی ڈیٹا حذف کر دیا گیا ہے۔") }}</p>
+    <p><a href="{{ url_for('register') }}">{{ t("Create a new account / نیا اکاؤنٹ بنائیں") }}</a></p>
+    {% elif session.get('username') %}
+    <p>{{ t("You are signed in as / آپ لاگ ان ہیں:") }} <strong>{{ session.get('username') }}</strong></p>
+    <p>{{ t("Deleting your account removes your name, username, height, weight, meals, custom foods, fasting, steps, exercise, calorie targets, and generated charts. The shared Desi dish database is not deleted. / اکاؤنٹ حذف کرنے سے آپ کا نام، یوزرنیم، قد، وزن، کھانا، ذاتی کھانے، روزہ، قدم، ورزش، کیلوری ہدف اور چارٹس حذف ہو جاتے ہیں۔ مشترکہ دیسی ڈش ڈیٹابیس حذف نہیں ہوتا۔") }}</p>
+    <button type="button" class="danger-btn" id="open-delete-dialog">{{ t("Delete Account / اکاؤنٹ حذف کریں") }}</button>
+
+    <dialog id="delete-account-dialog" class="confirm-dialog">
+        <form method="post" action="{{ url_for('delete_account') }}">
+            <input type="hidden" name="confirm" value="delete">
+            <h2>{{ t("Delete your account? / اکاؤنٹ حذف کریں؟") }}</h2>
+            <p>{{ t("This will permanently delete your Desi Fitness account and associated personal data. This action cannot be undone. / اس سے آپ کا دیسی فٹنس اکاؤنٹ اور ذاتی ڈیٹا مستقل طور پر حذف ہو جائے گا۔ یہ عمل واپس نہیں ہو سکتا۔") }}</p>
+            <div class="split-actions">
+                <button type="button" class="secondary-btn" id="cancel-delete-dialog">{{ t("Cancel / منسوخ") }}</button>
+                <button type="submit" class="danger-btn">{{ t("Delete Account / اکاؤنٹ حذف کریں") }}</button>
+            </div>
+        </form>
+    </dialog>
+    <script>
+        (function () {
+            var dialog = document.getElementById("delete-account-dialog");
+            var openBtn = document.getElementById("open-delete-dialog");
+            var cancelBtn = document.getElementById("cancel-delete-dialog");
+            if (!dialog || !openBtn) {
+                return;
+            }
+            openBtn.addEventListener("click", function () {
+                if (typeof dialog.showModal === "function") {
+                    dialog.showModal();
+                } else {
+                    dialog.setAttribute("open", "open");
+                }
+            });
+            if (cancelBtn) {
+                cancelBtn.addEventListener("click", function () {
+                    if (typeof dialog.close === "function") {
+                        dialog.close();
+                    } else {
+                        dialog.removeAttribute("open");
+                    }
+                });
+            }
+        })();
+    </script>
+    {% else %}
+    <p>{{ t("Desi Fitness does not collect email addresses. To delete an account you must sign in with that account's username, the same way you sign in to the app. / دیسی فٹنس ای میل نہیں لیتا۔ اکاؤنٹ حذف کرنے کے لیے اسی یوزرنیم سے لاگ ان کریں جس سے آپ ایپ میں داخل ہوتے ہیں۔") }}</p>
+    <p>{{ t("You can also delete your account from Profile after signing in to the Android app. / اینڈرائیڈ ایپ میں لاگ ان کر کے پروفائل سے بھی اکاؤنٹ حذف کر سکتے ہیں۔") }}</p>
+
+    {% if error %}
+    <p class="danger">{{ error }}</p>
+    {% endif %}
+
+    <form method="post">
+        <label for="username">{{ t("Username / یوزرنیم") }}</label>
+        <input id="username" name="username" required placeholder="{{ t('Enter your username / اپنا یوزرنیم درج کریں') }}">
+        <button type="submit">{{ t("Sign in to continue / جاری رکھنے کے لیے لاگ ان کریں") }}</button>
+    </form>
+    {% endif %}
+</section>
+{% endblock %}

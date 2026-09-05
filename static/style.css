@@ -1095,3 +1095,37 @@ small {
 .legal-page li {
     margin-bottom: 6px;
 }
+
+.danger-panel {
+    border-color: rgba(248, 113, 113, 0.35);
+}
+
+.notice {
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    background: rgba(34, 197, 94, 0.1);
+    color: #dcfce7;
+}
+
+.confirm-dialog {
+    width: min(420px, 92vw);
+    padding: 18px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface-solid);
+    color: var(--text);
+}
+
+.confirm-dialog::backdrop {
+    background: rgba(2, 6, 23, 0.72);
+}
+
+.confirm-dialog h2 {
+    margin-top: 0;
+}
+
+.confirm-dialog form {
+    display: grid;
+    gap: 12px;
+}

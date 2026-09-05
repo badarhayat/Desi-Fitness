@@ -109,6 +109,15 @@ def _require_login():
     return None
 
 
+def _safe_next_url(value: str | None) -> str | None:
+    if not value:
+        return None
+    path = value.strip()
+    if path.startswith("/") and not path.startswith("//"):
+        return path
+    return None
+
+
 def _get_user_tz_offset() -> int:
     """Return user's UTC offset in minutes (positive = east of UTC) from browser cookie."""
     try:
@@ -1024,9 +1033,14 @@ def login():
             error = "Username not found. Please register first."
         else:
             session["username"] = username
-            return redirect(url_for("home"))
+            next_url = _safe_next_url(request.form.get("next") or request.args.get("next"))
+            return redirect(next_url or url_for("home"))
     
-    return render_template("login.html", error=error)
+    return render_template(
+        "login.html",
+        error=error,
+        next_url=_safe_next_url(request.form.get("next") or request.args.get("next")),
+    )
 
 
 @app.route("/logout", methods=["GET", "POST"])
@@ -2086,6 +2100,45 @@ def graph():
         window_label=window["label"],
         current_target=current_target,
         target_saved=request.args.get("saved") == "1",
+    )
+
+
+@app.route("/account/delete", methods=["POST"])
+def delete_account():
+    """Delete the signed-in user's own account. Ignores any submitted username."""
+    login_check = _require_login()
+    if login_check:
+        return login_check
+    if request.form.get("confirm") != "delete":
+        return redirect(url_for("register"))
+
+    username = _get_current_username()
+    if username:
+        fitness_analysis.delete_user_account(username)
+    session.pop("username", None)
+    return redirect(url_for("delete_account_page", deleted=1))
+
+
+@app.route("/delete-account", methods=["GET", "POST"])
+def delete_account_page():
+    """Public Play Store deletion page. Login uses the same username session as the app."""
+    deleted = request.args.get("deleted") == "1"
+    error = None
+
+    if request.method == "POST" and not _get_current_username():
+        username = request.form.get("username", "").strip().lower()
+        if not username:
+            error = "Username is required."
+        elif username not in fitness_analysis.all_user_data:
+            error = "Username not found."
+        else:
+            session["username"] = username
+            return redirect(url_for("delete_account_page"))
+
+    return render_template(
+        "delete_account.html",
+        error=error,
+        deleted=deleted,
     )
 
 

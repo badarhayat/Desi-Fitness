@@ -9,6 +9,9 @@
         {% endif %}
         
         <form method="POST" action="{{ url_for('login') }}">
+            {% if next_url %}
+            <input type="hidden" name="next" value="{{ next_url }}">
+            {% endif %}
             <div class="form-group">
                 <label for="username">{{ t('Username / یوزرنیم') }}</label>
                 <input type="text" id="username" name="username" required placeholder="{{ t('Enter your username / اپنا یوزرنیم درج کریں') }}">

@@ -137,6 +137,42 @@ def _get_or_create_user_data(username: str) -> dict:
     return all_user_data[username]
 
 
+def _safe_username_token(username: str) -> str:
+    return "".join(ch if ch.isalnum() else "_" for ch in (username or "user"))
+
+
+def delete_user_account(username: str) -> bool:
+    """Permanently delete one user's account and personal records.
+
+    Removes the in-memory record, ``user_data/<username>.json``, and generated
+    chart images for that user. Shared dish CSVs and the default nutrition
+    database are left untouched.
+    """
+    username = (username or "").strip().lower()
+    if not username or "/" in username or "\\" in username or username in {".", ".."}:
+        return False
+
+    existed = username in all_user_data
+    all_user_data.pop(username, None)
+
+    DATA_DIR.mkdir(exist_ok=True)
+    path = DATA_DIR / f"{username}.json"
+    if path.parent.resolve() != DATA_DIR.resolve():
+        return False
+    if path.exists():
+        existed = True
+        path.unlink()
+    path.with_suffix(".tmp").unlink(missing_ok=True)
+
+    static_dir = Path(__file__).parent / "static"
+    token = _safe_username_token(username)
+    if static_dir.is_dir() and token:
+        for fpath in static_dir.glob(f"*_{token}.png"):
+            fpath.unlink(missing_ok=True)
+
+    return existed
+
+
 # Load all saved user data on module import
 _load_all_users()
 
