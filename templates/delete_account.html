@@ -13,7 +13,6 @@
     <p>{{ t("You are signed in as / آپ لاگ ان ہیں:") }} <strong>{{ session.get('username') }}</strong></p>
     <p>{{ t("This deletes the signed-in account only. / صرف وہی اکاؤنٹ حذف ہوگا جس سے آپ لاگ ان ہیں۔") }}</p>
     <button type="button" class="danger-btn" id="open-delete-dialog">{{ t("Delete Account / اکاؤنٹ حذف کریں") }}</button>
-
     <dialog id="delete-account-dialog" class="confirm-dialog">
         <form method="post" action="{{ url_for('delete_account') }}">
             <input type="hidden" name="confirm" value="delete">
@@ -25,14 +24,30 @@
             </div>
         </form>
     </dialog>
+    {% elif pending_username %}
+    {% if error %}
+    <p class="danger">{{ error }}</p>
+    {% endif %}
+    <p class="notice">{{ t("Your details match the registered account. / آپ کی تفصیلات رجسٹرڈ اکاؤنٹ سے میل کھاتی ہیں۔") }} <strong>{{ pending_username }}</strong></p>
+    <p>{{ t("This is not an app login. Confirm below to delete this account. / یہ ایپ لاگ ان نہیں ہے۔ اکاؤنٹ حذف کرنے کے لیے نیچے تصدیق کریں۔") }}</p>
+    <form method="post">
+        <input type="hidden" name="confirm" value="delete">
+        <h2>{{ t("Delete your account? / اکاؤنٹ حذف کریں؟") }}</h2>
+        <p>{{ t("This will permanently delete your Desi Fitness account and associated personal data. This action cannot be undone. / اس سے آپ کا دیسی فٹنس اکاؤنٹ اور ذاتی ڈیٹا مستقل طور پر حذف ہو جائے گا۔ یہ عمل واپس نہیں ہو سکتا۔") }}</p>
+        <div class="split-actions">
+            <button type="submit" class="secondary-btn" name="action" value="cancel_pending">{{ t("Cancel / منسوخ") }}</button>
+            <button type="submit" class="danger-btn" name="action" value="confirm_delete">{{ t("Delete Account / اکاؤنٹ حذف کریں") }}</button>
+        </div>
+    </form>
     {% else %}
-    <p>{{ t("Desi Fitness does not collect email addresses or passwords. To request deletion without the app, enter the username, name, and height you used when you registered. Username alone is not enough. / دیسی فٹنس ای میل یا پاس ورڈ نہیں لیتا۔ ایپ کے بغیر حذف کرنے کے لیے وہی یوزرنیم، نام اور قد درج کریں جو رجسٹریشن پر تھا۔ صرف یوزرنیم کافی نہیں۔") }}</p>
+    <p>{{ t("Desi Fitness does not collect email addresses or passwords. Login is username-only, so this page does not sign you into the app. Enter the username, name, and height from registration to verify you own the account. Username alone is not enough. / دیسی فٹنس ای میل یا پاس ورڈ نہیں لیتا۔ لاگ ان صرف یوزرنیم سے ہے، اس لیے یہ صفحہ ایپ میں داخل نہیں کرتا۔ تصدیق کے لیے رجسٹریشن والا یوزرنیم، نام اور قد درج کریں۔ صرف یوزرنیم کافی نہیں۔") }}</p>
 
     {% if error %}
     <p class="danger">{{ error }}</p>
     {% endif %}
 
-    <form method="post" id="logged-out-delete-form">
+    <form method="post">
+        <input type="hidden" name="action" value="verify">
         <label for="username">{{ t("Username / یوزرنیم") }}</label>
         <input id="username" name="username" required placeholder="{{ t('Enter your username / اپنا یوزرنیم درج کریں') }}">
 
@@ -44,21 +59,11 @@
             <input id="height_feet" name="height_feet" type="number" min="1" max="9" step="1" required placeholder="{{ t('Feet / فٹ') }}">
             <input id="height_inches" name="height_inches" type="number" min="0" max="11" step="1" required placeholder="{{ t('Inches / انچ') }}">
         </div>
-
-        <button type="button" class="danger-btn" id="open-delete-dialog">{{ t("Request account deletion / اکاؤنٹ حذف کی درخواست") }}</button>
-
-        <dialog id="delete-account-dialog" class="confirm-dialog">
-            <input type="hidden" name="confirm" value="delete">
-            <h2>{{ t("Delete your account? / اکاؤنٹ حذف کریں؟") }}</h2>
-            <p>{{ t("This will permanently delete your Desi Fitness account and associated personal data. This action cannot be undone. / اس سے آپ کا دیسی فٹنس اکاؤنٹ اور ذاتی ڈیٹا مستقل طور پر حذف ہو جائے گا۔ یہ عمل واپس نہیں ہو سکتا۔") }}</p>
-            <div class="split-actions">
-                <button type="button" class="secondary-btn" id="cancel-delete-dialog">{{ t("Cancel / منسوخ") }}</button>
-                <button type="submit" class="danger-btn">{{ t("Delete Account / اکاؤنٹ حذف کریں") }}</button>
-            </div>
-        </dialog>
+        <button type="submit">{{ t("Verify account / اکاؤنٹ تصدیق کریں") }}</button>
     </form>
     {% endif %}
 </section>
+{% if session.get('username') %}
 <script>
     (function () {
         var dialog = document.getElementById("delete-account-dialog");
@@ -68,10 +73,6 @@
             return;
         }
         openBtn.addEventListener("click", function () {
-            var form = openBtn.form || document.getElementById("logged-out-delete-form");
-            if (form && typeof form.reportValidity === "function" && !form.reportValidity()) {
-                return;
-            }
             if (typeof dialog.showModal === "function") {
                 dialog.showModal();
             } else {
@@ -89,4 +90,5 @@
         }
     })();
 </script>
+{% endif %}
 {% endblock %}

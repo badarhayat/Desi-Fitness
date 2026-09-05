@@ -1033,6 +1033,7 @@ def login():
             error = "Username not found. Please register first."
         else:
             session["username"] = username
+            session.pop("pending_account_deletion", None)
             next_url = _safe_next_url(request.form.get("next") or request.args.get("next"))
             return redirect(next_url or url_for("home"))
     
@@ -1047,6 +1048,7 @@ def login():
 def logout():
     """Logout the current user."""
     session.pop("username", None)
+    session.pop("pending_account_deletion", None)
     return redirect(url_for("login"))
 
 
@@ -1274,6 +1276,7 @@ def register():
                 )
 
                 session["username"] = username
+                session.pop("pending_account_deletion", None)
                 return redirect(url_for("home"))
 
     return render_template(
@@ -2121,14 +2124,20 @@ def delete_account():
 
 @app.route("/delete-account", methods=["GET", "POST"])
 def delete_account_page():
-    """Public Play Store deletion page. Logged-out users verify with registration details."""
+    """Public deletion page. Logged-out users verify registration details, then confirm.
+
+    This does not sign the visitor into the app. Username-only posts are ignored.
+    """
     deleted = request.args.get("deleted") == "1"
     error = None
 
     if request.method == "POST" and not _get_current_username():
-        if request.form.get("confirm") != "delete":
-            error = "Please confirm deletion to continue."
-        else:
+        action = (request.form.get("action") or "").strip()
+        if action == "cancel_pending":
+            session.pop("pending_account_deletion", None)
+            return redirect(url_for("delete_account_page"))
+
+        if action == "verify":
             matched = fitness_analysis.verify_account_identity(
                 request.form.get("username", ""),
                 request.form.get("name", ""),
@@ -2136,17 +2145,26 @@ def delete_account_page():
                 request.form.get("height_inches", ""),
             )
             if matched:
-                fitness_analysis.delete_user_account(matched)
-                return redirect(url_for("delete_account_page", deleted=1))
+                session["pending_account_deletion"] = matched
+                return redirect(url_for("delete_account_page"))
             error = (
                 "We could not verify that account. Check the username, name, "
                 "and height you used when you registered."
             )
 
+        elif action == "confirm_delete" and request.form.get("confirm") == "delete":
+            pending_username = session.get("pending_account_deletion")
+            if pending_username:
+                fitness_analysis.delete_user_account(pending_username)
+                session.pop("pending_account_deletion", None)
+                return redirect(url_for("delete_account_page", deleted=1))
+            error = "Please verify your account first."
+
     return render_template(
         "delete_account.html",
         error=error,
         deleted=deleted,
+        pending_username=session.get("pending_account_deletion"),
     )
 
 
