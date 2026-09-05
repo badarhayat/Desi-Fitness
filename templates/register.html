@@ -83,4 +83,50 @@
     </p>
     {% endif %}
 </section>
+
+{% if is_edit_mode %}
+<section class="panel danger-panel">
+    <h2>{{ t("Delete Account / اکاؤنٹ حذف کریں") }}</h2>
+    <p>{{ t("Permanently delete your Desi Fitness account and associated personal data. / اپنا دیسی فٹنس اکاؤنٹ اور ذاتی ڈیٹا مستقل طور پر حذف کریں۔") }}</p>
+    <button type="button" class="danger-btn" id="open-delete-dialog">{{ t("Delete Account / اکاؤنٹ حذف کریں") }}</button>
+</section>
+
+<dialog id="delete-account-dialog" class="confirm-dialog">
+    <form method="post" action="{{ url_for('delete_account') }}">
+        <input type="hidden" name="confirm" value="delete">
+        <h2>{{ t("Delete your account? / اکاؤنٹ حذف کریں؟") }}</h2>
+        <p>{{ t("This will permanently delete your Desi Fitness account and associated personal data. This action cannot be undone. / اس سے آپ کا دیسی فٹنس اکاؤنٹ اور ذاتی ڈیٹا مستقل طور پر حذف ہو جائے گا۔ یہ عمل واپس نہیں ہو سکتا۔") }}</p>
+        <div class="split-actions">
+            <button type="button" class="secondary-btn" id="cancel-delete-dialog">{{ t("Cancel / منسوخ") }}</button>
+            <button type="submit" class="danger-btn">{{ t("Delete Account / اکاؤنٹ حذف کریں") }}</button>
+        </div>
+    </form>
+</dialog>
+<script>
+    (function () {
+        var dialog = document.getElementById("delete-account-dialog");
+        var openBtn = document.getElementById("open-delete-dialog");
+        var cancelBtn = document.getElementById("cancel-delete-dialog");
+        if (!dialog || !openBtn) {
+            return;
+        }
+        openBtn.addEventListener("click", function () {
+            if (typeof dialog.showModal === "function") {
+                dialog.showModal();
+            } else {
+                dialog.setAttribute("open", "open");
+            }
+        });
+        if (cancelBtn) {
+            cancelBtn.addEventListener("click", function () {
+                if (typeof dialog.close === "function") {
+                    dialog.close();
+                } else {
+                    dialog.removeAttribute("open");
+                }
+            });
+        }
+    })();
+</script>
+{% endif %}
 {% endblock %}

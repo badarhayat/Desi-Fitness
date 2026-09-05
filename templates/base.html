@@ -2,8 +2,16 @@
 <html lang="{{ 'ur' if current_lang == 'urdu' else 'en' }}" dir="{{ 'rtl' if current_lang == 'urdu' else 'ltr' }}">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0b1222">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="Track desi meals, calories, weight, and fasting in Roman Urdu and Urdu.">
     <title>{{ t("Desi Fitness / دیسی فٹنس") }}</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -20,6 +28,7 @@
                 <a class="nav-link" href="{{ url_for('fasting') }}">{{ t("Fast / روزہ") }}</a>
                 <a class="nav-link" href="{{ url_for('graph') }}">{{ t("Goals / اہداف") }}</a>
                 <a class="nav-link" href="{{ url_for('custom_dish') }}">{{ t("Create / نیا") }}</a>
+                <a class="nav-link" href="{{ url_for('register') }}">{{ t("Profile / پروفائل") }}</a>
                 {% if session.get('username') == 'badar' %}
                 <a class="nav-link nav-link-admin" href="{{ url_for('admin') }}">Admin</a>
                 {% endif %}
@@ -49,6 +58,12 @@
         {% endif %}
         
         {% block content %}{% endblock %}
+        <footer class="site-footer">
+            <a href="{{ url_for('privacy') }}">{{ t("Privacy / پرائیویسی") }}</a>
+            <a href="{{ url_for('terms') }}">{{ t("Terms / شرائط") }}</a>
+            <a href="{{ url_for('support') }}">{{ t("Support / مدد") }}</a>
+            <a href="{{ url_for('delete_account_page') }}">{{ t("Delete account / اکاؤنٹ حذف") }}</a>
+        </footer>
     </div>
     <script>
         // Set user timezone offset cookie (minutes east of UTC)
